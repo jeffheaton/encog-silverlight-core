@@ -1,40 +1,34 @@
-// Encog(tm) Artificial Intelligence Framework v2.5
-// .Net Version
+//
+// Encog(tm) Core v3.0 - .Net Version
 // http://www.heatonresearch.com/encog/
-// http://code.google.com/p/encog-java/
-// 
-// Copyright 2008-2010 by Heaton Research Inc.
-// 
-// Released under the LGPL.
 //
-// This is free software; you can redistribute it and/or modify it
-// under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 2.1 of
-// the License, or (at your option) any later version.
+// Copyright 2008-2011 Heaton Research, Inc.
 //
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-// Lesser General Public License for more details.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// You should have received a copy of the GNU Lesser General Public
-// License along with this software; if not, write to the Free
-// Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-// 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-// 
-// Encog and Heaton Research are Trademarks of Heaton Research, Inc.
-// For information on Heaton Research trademarks, visit:
-// 
-// http://www.heatonresearch.com/copyright.html
-
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.IO;
+using System.Text;
+
 #if logging
-using log4net;
+
 #endif
+
 namespace Encog.Parse.Tags.Write
 {
     /// <summary>
@@ -42,33 +36,25 @@ namespace Encog.Parse.Tags.Write
     /// </summary>
     public class WriteTags
     {
-
         /// <summary>
         /// The output stream to write to.
         /// </summary>
-        private Stream output;
+        private readonly Stream _output;
 
         /// <summary>
         /// Stack to keep track of beginning and ending tags.
         /// </summary>
-        private Stack<String> tagStack;
+        private readonly Stack<String> _tagStack;
 
         /// <summary>
         /// The attributes for the current tag.
         /// </summary>
-        private IDictionary<String, String> attributes;
+        private readonly IDictionary<String, String> _attributes;
 
         /// <summary>
         /// Used to encode strings to bytes.
         /// </summary>
-        private StreamWriter encoder;
-
-#if logging
-        /// <summary>
-        /// The logging object.
-        /// </summary>
-        private readonly ILog logger = LogManager.GetLogger(typeof(WriteTags));
-#endif
+        private readonly StreamWriter _encoder;
 
         /// <summary>
         /// Construct an object to write tags.
@@ -76,20 +62,20 @@ namespace Encog.Parse.Tags.Write
         /// <param name="output">THe output stream.</param>
         public WriteTags(Stream output)
         {
-            this.output = output;
-            this.tagStack = new Stack<String>();
-            this.attributes = new Dictionary<String, String>();
-            this.encoder = new StreamWriter(output);
+            _output = output;
+            _tagStack = new Stack<String>();
+            _attributes = new Dictionary<String, String>();
+            _encoder = new StreamWriter(output);
         }
 
         /// <summary>
         /// Add an attribute to be written with the next tag.
         /// </summary>
         /// <param name="name">The name of the attribute.</param>
-        /// <param name="value">The value of the attribute.</param>
-        public void AddAttribute(String name, String value)
+        /// <param name="v">The value of the attribute.</param>
+        public void AddAttribute(String name, String v)
         {
-            this.attributes.Add(name, value);
+            _attributes.Add(name, v);
         }
 
         /// <summary>
@@ -99,15 +85,15 @@ namespace Encog.Parse.Tags.Write
         /// <param name="text">The text to add.</param>
         public void AddCDATA(String text)
         {
-            StringBuilder builder = new StringBuilder();
+            var builder = new StringBuilder();
             builder.Append('<');
-            builder.Append(TagConst.CDATA_BEGIN);
+            builder.Append(TagConst.CDATABegin);
             builder.Append(text);
-            builder.Append(TagConst.CDATA_END);
+            builder.Append(TagConst.CDATAEnd);
             builder.Append('>');
             try
             {
-                this.encoder.Write(builder.ToString());
+                _encoder.Write(builder.ToString());
             }
             catch (IOException e)
             {
@@ -135,7 +121,6 @@ namespace Encog.Parse.Tags.Write
         public void AddProperty(String name, int i)
         {
             AddProperty(name, "" + i);
-
         }
 
         /// <summary>
@@ -158,7 +143,7 @@ namespace Encog.Parse.Tags.Write
         {
             try
             {
-                this.encoder.Write(text);
+                _encoder.Write(text);
             }
             catch (IOException e)
             {
@@ -179,14 +164,14 @@ namespace Encog.Parse.Tags.Write
         /// <param name="name">The tag to begin.</param>
         public void BeginTag(String name)
         {
-            StringBuilder builder = new StringBuilder();
+            var builder = new StringBuilder();
             builder.Append("<");
             builder.Append(name);
-            if (this.attributes.Count > 0)
+            if (_attributes.Count > 0)
             {
-                foreach (String key in this.attributes.Keys)
+                foreach (String key in _attributes.Keys)
                 {
-                    String value = this.attributes[key];
+                    String value = _attributes[key];
                     builder.Append(' ');
                     builder.Append(key);
                     builder.Append('=');
@@ -199,14 +184,14 @@ namespace Encog.Parse.Tags.Write
 
             try
             {
-                this.encoder.Write(builder.ToString());
+                _encoder.Write(builder.ToString());
             }
             catch (IOException e)
             {
                 throw new ParseError(e);
             }
-            this.attributes.Clear();
-            this.tagStack.Push(name);
+            _attributes.Clear();
+            _tagStack.Push(name);
         }
 
         /// <summary>
@@ -216,7 +201,7 @@ namespace Encog.Parse.Tags.Write
         {
             try
             {
-                this.output.Close();
+                _output.Close();
             }
             catch (Exception e)
             {
@@ -229,7 +214,7 @@ namespace Encog.Parse.Tags.Write
         /// </summary>
         public void EndDocument()
         {
-            this.encoder.Flush();
+            _encoder.Flush();
         }
 
         /// <summary>
@@ -237,64 +222,69 @@ namespace Encog.Parse.Tags.Write
         /// </summary>
         public void EndTag()
         {
-            if (this.tagStack.Count < 1)
+            if (_tagStack.Count < 1)
             {
                 throw new ParseError(
-                        "Can't create end tag, no beginning tag.");
+                    "Can't create end tag, no beginning tag.");
             }
-            String tag = this.tagStack.Pop();
+            String tag = _tagStack.Pop();
 
-            StringBuilder builder = new StringBuilder();
+            var builder = new StringBuilder();
             builder.Append("</");
             builder.Append(tag);
             builder.Append(">");
 
             try
             {
-                this.encoder.Write(builder.ToString());
+                _encoder.Write(builder.ToString());
             }
             catch (IOException e)
             {
                 throw new ParseError(e);
             }
-
+        }
+        
+        /// <summary>
+        /// Write an array as a property.
+        /// </summary>
+        /// <param name="name">The name of the property.</param>
+        /// <param name="array">The array to write.</param>
+        /// <param name="len">The length of the array to write.</param>
+        public void AddProperty(String name, double[] array, int len)
+        {
+            if (array != null)
+            {
+                var str = new StringBuilder();
+                for (int i = 0; i < len; i++)
+                {
+                    if (i != 0)
+                        str.Append(' ');
+                    str.Append(array[i]);
+                }
+                AddProperty(name, str.ToString());
+            }
         }
 
-        	/**
-	 * Write an array as a property.
-	 * @param name The name of the property.
-	 * @param array The array to write.
-	 * @param len The length of the array to write.
-	 */
-	public void AddProperty(String name, double[] array, int len) {
-		if (array != null) {
-			StringBuilder str = new StringBuilder();
-			for (int i = 0; i < len; i++) {
-				if (i != 0)
-					str.Append(' ');
-				str.Append(array[i]);
-			}
-			AddProperty(name, str.ToString());
-		}
-	}
-	
-	/**
-	 * Write an array as a property.
-	 * @param name The name of the property.
-	 * @param array The array to write.
-	 * @param len The length of the array to write.
-	 */
-	public void AddProperty(String name, int[] array, int len) {
-		if (array != null) {
-			StringBuilder str = new StringBuilder();
-			for (int i = 0; i < len; i++) {
-				if (i != 0)
-					str.Append(' ');
-				str.Append(array[i]);
-			}
-			AddProperty(name, str.ToString());
-		}
-	}
+        /// <summary>
+        /// Write an array as a property.
+        /// </summary>
+        /// <param name="name">The name of the property.</param>
+        /// <param name="array">The array to write.</param>
+        /// <param name="len">The length of the array to write.</param>
+        public void AddProperty(String name, int[] array, int len)
+        {
+            if (array != null)
+            {
+                var str = new StringBuilder();
+                for (int i = 0; i < len; i++)
+                {
+                    if (i != 0)
+                        str.Append(' ');
+                    str.Append(array[i]);
+                }
+                AddProperty(name, str.ToString());
+            }
+        }
 
 
         /// <summary>
@@ -303,25 +293,20 @@ namespace Encog.Parse.Tags.Write
         /// <param name="name">The tag to be ending.</param>
         public void EndTag(String name)
         {
-            if (!this.tagStack.Peek().Equals(name))
+            if (!_tagStack.Peek().Equals(name))
             {
                 String str = "End tag mismatch, should be ending: "
-                       + this.tagStack.Peek() + ", but trying to end: " + name
-                       + ".";
+                             + _tagStack.Peek() + ", but trying to end: " + name
+                             + ".";
 #if logging
-                if (this.logger.IsErrorEnabled)
+                if (logger.IsErrorEnabled)
                 {
-                    this.logger.Error(str);
+                    logger.Error(str);
                 }
 #endif
                 throw new ParseError(str);
             }
-            else
-            {
-                EndTag();
-            }
-
+            EndTag();
         }
     }
-
 }

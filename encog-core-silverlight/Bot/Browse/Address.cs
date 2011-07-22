@@ -1,36 +1,26 @@
-// Encog(tm) Artificial Intelligence Framework v2.5
-// .Net Version
+//
+// Encog(tm) Core v3.0 - .Net Version
 // http://www.heatonresearch.com/encog/
-// http://code.google.com/p/encog-java/
-// 
-// Copyright 2008-2010 by Heaton Research Inc.
-// 
-// Released under the LGPL.
 //
-// This is free software; you can redistribute it and/or modify it
-// under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 2.1 of
-// the License, or (at your option) any later version.
+// Copyright 2008-2011 Heaton Research, Inc.
 //
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-// Lesser General Public License for more details.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// You should have received a copy of the GNU Lesser General Public
-// License along with this software; if not, write to the Free
-// Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-// 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-// 
-// Encog and Heaton Research are Trademarks of Heaton Research, Inc.
-// For information on Heaton Research trademarks, visit:
-// 
-// http://www.heatonresearch.com/copyright.html
-
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace Encog.Bot.Browse
 {
@@ -42,12 +32,12 @@ namespace Encog.Bot.Browse
         /// <summary>
         /// The original text from the address.
         /// </summary>
-        private String original;
+        private readonly String _original;
 
         /// <summary>
         /// The address as a URL.
         /// </summary>
-        private Uri url;
+        private readonly Uri _url;
 
         /// <summary>
         /// Construct the address from a URL.
@@ -55,8 +45,8 @@ namespace Encog.Bot.Browse
         /// <param name="u">The URL to use.</param>
         public Address(Uri u)
         {
-            this.url = u;
-            this.original = u.ToString();
+            _url = u;
+            _original = u.ToString();
         }
 
         /// <summary>
@@ -66,12 +56,8 @@ namespace Encog.Bot.Browse
         /// <param name="original">A full URL or a URL relative to the base.</param>
         public Address(Uri b, String original)
         {
-            this.original = original;
-            if (b == null)
-                this.url = new Uri(new Uri("http://localhost/"),original);
-            else 
-                this.url = new Uri(b, original);
-
+            _original = original;
+            _url = b == null ? new Uri(new Uri("http://localhost/"), original) : new Uri(b, original);
         }
 
         /// <summary>
@@ -79,10 +65,7 @@ namespace Encog.Bot.Browse
         /// </summary>
         public String Original
         {
-            get
-            {
-                return this.original;
-            }
+            get { return _original; }
         }
 
         /// <summary>
@@ -90,10 +73,7 @@ namespace Encog.Bot.Browse
         /// </summary>
         public Uri Url
         {
-            get
-            {
-                return this.url;
-            }
+            get { return _url; }
         }
 
         /// <summary>
@@ -102,16 +82,7 @@ namespace Encog.Bot.Browse
         /// <returns></returns>
         public override String ToString()
         {
-            if (this.url != null)
-            {
-                return this.url.ToString();
-            }
-            else
-            {
-                return this.original;
-            }
+            return _url != null ? _url.ToString() : _original;
         }
-
     }
-
 }

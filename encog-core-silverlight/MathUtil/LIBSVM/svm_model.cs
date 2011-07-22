@@ -1,7 +1,27 @@
 //
-// svm_model
+// Encog(tm) Core v3.0 - .Net Version
+// http://www.heatonresearch.com/encog/
+//
+// Copyright 2008-2011 Heaton Research, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
 //
 using System;
+
 namespace Encog.MathUtil.LIBSVM
 {
     // This class was taken from the libsvm package.  We have made some
@@ -42,24 +62,23 @@ namespace Encog.MathUtil.LIBSVM
     // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
     // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #if !SILVERLIGHT
-	[Serializable]
+    [Serializable]
 #endif
-	public class svm_model
-	{
-		internal svm_parameter param; // parameter
-		internal int nr_class; // number of classes, = 2 in regression/one class svm
-		internal int l; // total #SV
-		internal svm_node[][] SV; // SVs (SV[l])
-		internal double[][] sv_coef; // coefficients for SVs in decision functions (sv_coef[n-1][l])
-		internal double[] rho; // constants in decision functions (rho[n*(n-1)/2])
-		internal double[] probA; // pariwise probability information
-		internal double[] probB;
-		
-		// for classification only
-		
-		internal int[] label; // label of each class (label[n])
-		internal int[] nSV; // number of SVs for each class (nSV[n])
-		// nSV[0] + nSV[1] + ... + nSV[n-1] = l
-	}
-	
+    public class svm_model
+    {
+        internal svm_parameter param; // parameter
+        internal int nr_class; // number of classes, = 2 in regression/one class svm
+        internal int l; // total #SV
+        public svm_node[][] SV; // SVs (SV[l])
+        internal double[][] sv_coef; // coefficients for SVs in decision functions (sv_coef[n-1][l])
+        internal double[] rho; // constants in decision functions (rho[n*(n-1)/2])
+        internal double[] probA; // pariwise probability information
+        internal double[] probB;
+
+        // for classification only
+
+        internal int[] label; // label of each class (label[n])
+        internal int[] nSV; // number of SVs for each class (nSV[n])
+        // nSV[0] + nSV[1] + ... + nSV[n-1] = l
+    }
 }

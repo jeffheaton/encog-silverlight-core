@@ -1,53 +1,35 @@
-// Encog(tm) Artificial Intelligence Framework v2.5
-// .Net Version
+//
+// Encog(tm) Core v3.0 - .Net Version
 // http://www.heatonresearch.com/encog/
-// http://code.google.com/p/encog-java/
-// 
-// Copyright 2008-2010 by Heaton Research Inc.
-// 
-// Released under the LGPL.
 //
-// This is free software; you can redistribute it and/or modify it
-// under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 2.1 of
-// the License, or (at your option) any later version.
+// Copyright 2008-2011 Heaton Research, Inc.
 //
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-// Lesser General Public License for more details.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// You should have received a copy of the GNU Lesser General Public
-// License along with this software; if not, write to the Free
-// Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-// 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-// 
-// Encog and Heaton Research are Trademarks of Heaton Research, Inc.
-// For information on Heaton Research trademarks, visit:
-// 
-// http://www.heatonresearch.com/copyright.html
-
-#if logging
-using log4net;
-#endif
-
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Encog.MathUtil;
-using Encog.Neural.Data;
-using Encog.Neural.NeuralData;
-using Encog.Neural.Networks.Synapse;
-using Encog.Neural.Networks.Layers;
-using Encog.Neural.Networks.Structure;
+using Encog.ML;
+using Encog.ML.Data;
+using Encog.ML.Train;
+using Encog.Neural.Flat.Train;
 using Encog.Util;
-using Encog.Neural.Networks.Training.Propagation.Resilient;
-using Encog.Neural.Networks.Training.Propagation.Back;
-using Encog.Neural.Networks.Training.Propagation.Manhattan;
-using Encog.Engine.Network.Flat;
-using Encog.Engine.Network.Train;
-using Encog.Engine.Network.Train.Prop;
+using Encog.Util.Logging;
+using Encog.Neural.Flat.Train.Prop;
+using Encog.Neural.Error;
+using Encog.Util.Concurrency;
 
 namespace Encog.Neural.Networks.Training.Propagation
 {
@@ -56,205 +38,158 @@ namespace Encog.Neural.Networks.Training.Propagation
     /// methods. The specifics of each of the propagation methods is implemented
     /// inside of the PropagationMethod interface implementors.
     /// </summary>
-    public abstract class Propagation : BasicTraining
+    ///
+    public abstract class Propagation : BasicTraining, ITrain, IMultiThreadable
     {
-#if logging
-        /// <summary>
-        /// The logging object.
-        /// </summary>
-        [NonSerialized]
-        private static readonly ILog LOGGER = LogManager.GetLogger(typeof(Propagation));
-#endif
-
         /// <summary>
         /// The network.
         /// </summary>
-        private BasicNetwork network;
+        ///
+        private readonly IContainsFlat _network;
 
         /// <summary>
         /// The current flat trainer we are using, or null for none.
         /// </summary>
-        private ITrainFlatNetwork flatTraining;
-        
+        ///
+        private ITrainFlatNetwork _flatTraining;
+
         /// <summary>
-        /// Construct a propagation object. 
+        /// Construct a propagation object.
         /// </summary>
+        ///
         /// <param name="network">The network.</param>
         /// <param name="training">The training set.</param>
-        public Propagation(BasicNetwork network, INeuralDataSet training)
-            : base()
+        protected Propagation(IContainsFlat network, IMLDataSet training) : base(TrainingImplementationType.Iterative)
         {
-            this.network = network;
+            _network = network;
             Training = training;
         }
 
-        /// <summary>
-        /// True if this training can be continued.
-        /// </summary>
-        public virtual bool CanContinue
-        {
-            get
-            {
-                return false;
-            }
-        }
-
-
-        /// <summary>
-        /// The flat training.
-        /// </summary>
+        /// <value>the flatTraining to set</value>
         public ITrainFlatNetwork FlatTraining
         {
+            get { return _flatTraining; }
+            set { _flatTraining = value; }
+        }
+
+
+        /// <summary>
+        /// Set the number of threads. Specify zero to tell Encog to automatically
+        /// determine the best number of threads for the processor. If OpenCL is used
+        /// as the target device, then this value is not used.
+        /// </summary>
+        public int ThreadCount
+        {
+            get { return _flatTraining.NumThreads; }
+            set { _flatTraining.NumThreads = value; }
+        }
+
+
+        /// <summary>
+        /// Default is true.  Call this with false to disable flat spot fix.
+        /// 
+        /// For more info on flat spot:
+        /// 
+        /// http://www.heatonresearch.com/wiki/Flat_Spot
+        /// 
+        /// </summary>
+        public bool FixFlatSpot 
+        {
             get
             {
-                return this.flatTraining;
+                return ((TrainFlatNetworkProp)_flatTraining).FixFlatSpot;
             }
             set
             {
-                this.flatTraining = value;
+                ((TrainFlatNetworkProp)_flatTraining).FixFlatSpot = value;
             }
         }
 
         /// <summary>
-        /// The network.
+        /// The error function, defaults to linear.
         /// </summary>
-        public override BasicNetwork Network
+        public IErrorFunction ErrorFunction
         {
-            get
-            {
-                return this.network;
-            }
+            get { return ((TrainFlatNetworkProp) _flatTraining).ErrorFunction; }
+            set { ((TrainFlatNetworkProp) _flatTraining).ErrorFunction = value; }
         }
 
-        /// <summary>
-        /// The number of threads.
-        /// </summary>
-        public int NumThreads
-        {
-            get
-            {
-                return this.flatTraining.NumThreads;
-            }
-            set
-            {
-                this.flatTraining.NumThreads = value;
-            }
-        }
-
-        /// <summary>
-        /// Determine if this specified training continuation object is valid for
-        /// this training method. 
-        /// </summary>
-        /// <param name="state">The training continuation object to check.</param>
-        /// <returns>True if the continuation object is valid.</returns>
-        public virtual bool IsValidResume(TrainingContinuation state)
-        {
-            return false;
-        }
-
-        /// <summary>
-        /// Perform one training iteration.
-        /// </summary>
-        public override void Iteration()
-        {
-            try
-            {
-                this.network.Structure.UpdateFlatNetwork();
-                PreIteration();
-
-                this.flatTraining.Iteration();
-                this.Error = this.flatTraining.Error;
-                this.network.Structure.FlatUpdate = FlatUpdateNeeded.Unflatten;
-
-                PostIteration();
-
-#if logging
-                if (LOGGER.IsInfoEnabled)
-                {
-                    LOGGER.Info("Training iteration done, error: " + this.Error);
-                }
-#endif
-            }
-            catch (IndexOutOfRangeException ex)
-            {
-                EncogValidate.ValidateNetworkForTraining(this.network,
-                        Training);
-                throw new EncogError(ex);
-            }
-        }
-
-        /// <summary>
-        /// Pause the training to continue later. 
-        /// </summary>
-        /// <returns>A training continuation object.</returns>
-        public virtual TrainingContinuation Pause()
-        {
-            throw new TrainingError("This training type does not support pause.");
-        }
-
-        /// <summary>
-        /// Resume training. 
-        /// </summary>
-        /// <param name="state">The training continuation object to use to continue.</param>
-        public virtual void Resume(TrainingContinuation state)
-        {
-            throw new TrainingError("This training type does not support resume.");
-        }
+        #region Train Members
 
         /// <summary>
         /// Should be called after training has completed and the iteration method
         /// will not be called any further.
         /// </summary>
-        public override void FinishTraining()
+        ///
+        public override sealed void FinishTraining()
         {
             base.FinishTraining();
-            this.network.Structure.UpdateFlatNetwork();
-            this.flatTraining.FinishTraining();
+            _flatTraining.FinishTraining();
         }
 
-        /// <summary>
-        /// The OpenCL device to use, or null for the CPU.
-        /// </summary>
-        public OpenCLTrainingProfile Profile
+        /// <inheritdoc/>
+        public override IMLMethod Method
         {
-            get
-            {
-                return null;
-            }
+            get { return _network; }
         }
-        
+
+
         /// <summary>
-        /// Perform the specified number of training iterations. This can be more efficient than single 
-        /// training iterations.  This is particularly true if you are training with a GPU. 
+        /// Perform one training iteration.
         /// </summary>
-        /// <param name="count">The number of training iterations.</param>
-        public override void Iteration(int count)
+        ///
+        public override sealed void Iteration()
         {
             try
             {
                 PreIteration();
 
-                this.flatTraining.Iteration(count);
-                this.CurrentIteration = this.flatTraining.CurrentIteration;
-                this.Error = this.flatTraining.Error;
-                this.network.Structure.FlatUpdate = FlatUpdateNeeded.Unflatten;
+                _flatTraining.Iteration();
+                Error = _flatTraining.Error;
 
                 PostIteration();
 
-#if logging
-                if (LOGGER.IsInfoEnabled)
-                {
-                    LOGGER.Info("Training iterations done, error: " + this.Error);
-                }
-#endif
+                EncogLogging.Log(EncogLogging.LevelInfo,
+                                 "Training iteration done, error: " + Error);
             }
             catch (IndexOutOfRangeException ex)
             {
-                EncogValidate.ValidateNetworkForTraining(this.network,
-                        Training);
+                EncogValidate.ValidateNetworkForTraining(_network,
+                                                         Training);
                 throw new EncogError(ex);
             }
         }
 
+        /// <summary>
+        /// Perform the specified number of training iterations. This can be more
+        /// efficient than single training iterations. This is particularly true if
+        /// you are training with a GPU.
+        /// </summary>
+        ///
+        /// <param name="count">The number of training iterations.</param>
+        public override sealed void Iteration(int count)
+        {
+            try
+            {
+                PreIteration();
+
+                _flatTraining.Iteration(count);
+                IterationNumber = _flatTraining.IterationNumber;
+                Error = _flatTraining.Error;
+
+                PostIteration();
+
+                EncogLogging.Log(EncogLogging.LevelInfo,
+                                 "Training iterations done, error: " + Error);
+            }
+            catch (IndexOutOfRangeException ex)
+            {
+                EncogValidate.ValidateNetworkForTraining(_network,
+                                                         Training);
+                throw new EncogError(ex);
+            }
+        }
+
+        #endregion
     }
 }

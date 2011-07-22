@@ -1,49 +1,31 @@
-// Encog(tm) Artificial Intelligence Framework v2.5
-// .Net Version
+//
+// Encog(tm) Core v3.0 - .Net Version
 // http://www.heatonresearch.com/encog/
-// http://code.google.com/p/encog-java/
-// 
-// Copyright 2008-2010 by Heaton Research Inc.
-// 
-// Released under the LGPL.
 //
-// This is free software; you can redistribute it and/or modify it
-// under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 2.1 of
-// the License, or (at your option) any later version.
+// Copyright 2008-2011 Heaton Research, Inc.
 //
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-// Lesser General Public License for more details.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// You should have received a copy of the GNU Lesser General Public
-// License along with this software; if not, write to the Free
-// Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-// 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-// 
-// Encog and Heaton Research are Trademarks of Heaton Research, Inc.
-// For information on Heaton Research trademarks, visit:
-// 
-// http://www.heatonresearch.com/copyright.html
-
-#if logging
-using log4net;
-#endif
-
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Encog.Neural.Networks.Layers;
-using Encog.Neural.Networks.Synapse;
-using Encog.MathUtil;
-using Encog.MathUtil.Matrices;
-using Encog.Engine.Network.Flat;
-using Encog.Engine.Util;
 using Encog.Engine.Network.Activation;
-
-
+using Encog.Neural.Flat;
+using Encog.Neural.Networks.Layers;
+using Encog.Util.CSV;
 
 namespace Encog.Neural.Networks.Structure
 {
@@ -53,162 +35,154 @@ namespace Encog.Neural.Networks.Structure
     /// traverse itself each time a complete collection of layers or synapses is
     /// needed.
     /// </summary>
-#if !SILVERLIGHT
+    #if !SILVERLIGHT
     [Serializable]
-#endif
+    #endif
     public class NeuralStructure
     {
-
-#if logging
-        /// <summary>
-        /// The logging object.
-        /// </summary>
-        [NonSerialized]
-        private static readonly ILog logger = LogManager.GetLogger(typeof(NeuralStructure));
-#endif
-
         /// <summary>
         /// The layers in this neural network.
         /// </summary>
-        private List<ILayer> layers = new List<ILayer>();
-
-        /// <summary>
-        /// The synapses in this neural network.
-        /// </summary>
-        private List<ISynapse> synapses = new List<ISynapse>();
+        ///
+        private readonly IList<ILayer> _layers;
 
         /// <summary>
         /// The neural network this class belongs to.
         /// </summary>
-        private BasicNetwork network;
+        ///
+        private readonly BasicNetwork _network;
 
         /// <summary>
-        /// The next ID to be assigned to a layer.
+        /// The limit, below which a connection is treated as zero.
         /// </summary>
-        private int nextID = 1;
+        ///
+        private double _connectionLimit;
 
-        private double connectionLimit;
-        private bool connectionLimited;
+        /// <summary>
+        /// Are connections limited?
+        /// </summary>
+        ///
+        private bool _connectionLimited;
 
         /// <summary>
         /// The flattened form of the network.
         /// </summary>
-#if !SILVERLIGHT
-        [NonSerialized]
-#endif
-        private FlatNetwork flat;
+        ///
+        private FlatNetwork _flat;
 
         /// <summary>
-        /// What type of update is needed to the flat network.
+        /// Construct a structure object for the specified network.
         /// </summary>
-#if !SILVERLIGHT
-        [NonSerialized]
-#endif
-        private FlatUpdateNeeded flatUpdate;
-
-
-        /// <summary>
-        /// Construct a structure object for the specified network. 
-        /// </summary>
-        /// <param name="network">The network to construct a structure for.</param>
         public NeuralStructure(BasicNetwork network)
         {
-            this.network = network;
+            _layers = new List<ILayer>();
+            _network = network;
         }
 
-        /// <summary>
-        /// Assign an ID to every layer that does not already have one.
-        /// </summary>
-        public void AssignID()
+
+        /// <value>The connection limit.</value>
+        public double ConnectionLimit
         {
-            foreach (ILayer layer in this.layers)
-            {
-                AssignID(layer);
-            }
-            Sort();
+            get { return _connectionLimit; }
         }
 
+
         /// <summary>
-        /// Assign an ID to the specified layer. 
+        /// Set the flat network.
         /// </summary>
-        /// <param name="layer">The layer to get an ID assigned.</param>
-        public void AssignID(ILayer layer)
+        public FlatNetwork Flat
         {
-            if (layer.ID == -1)
+            get
             {
-                layer.ID = GetNextID();
+                RequireFlat();
+                return _flat;
             }
+            set { _flat = value; }
+        }
+
+
+        /// <value>The layers in this neural network.</value>
+        public IList<ILayer> Layers
+        {
+            get { return _layers; }
+        }
+
+
+        /// <value>The network this structure belongs to.</value>
+        public BasicNetwork Network
+        {
+            get { return _network; }
+        }
+
+
+        /// <value>True if this is not a fully connected feedforward network.</value>
+        public bool ConnectionLimited
+        {
+            get { return _connectionLimited; }
         }
 
         /// <summary>
-        /// Calculate the size that an array should be to hold all of the weights
-        /// and bias values. 
+        /// Calculate the size that an array should be to hold all of the weights and
+        /// bias values.
         /// </summary>
+        ///
         /// <returns>The size of the calculated array.</returns>
         public int CalculateSize()
         {
-            int size = 0;
-
-            // first determine size from matrixes
-            foreach (ISynapse synapse
-                    in this.network.Structure.Synapses)
-            {
-                size += synapse.MatrixSize;
-            }
-
-            // determine size from bias values
-            foreach (ILayer layer in this.network.Structure.Layers)
-            {
-                if (layer.HasBias)
-                {
-                    size += layer.NeuronCount;
-                }
-            }
-            return size;
-        }
-
-
-        /// <summary>
-        /// Determine if the network contains a layer of the specified type. 
-        /// </summary>
-        /// <param name="type">The layer type we are looking for.</param>
-        /// <returns>True if this layer type is present.</returns>
-        public bool ContainsLayerType(Type type)
-        {
-            foreach (ILayer layer in this.layers)
-            {
-                if (layer.GetType().IsInstanceOfType(type))
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return NetworkCODEC.NetworkSize(_network);
         }
 
         /// <summary>
-        /// Build the layer structure.
+        /// Enforce that all connections are above the connection limit. Any
+        /// connections below this limit will be severed.
         /// </summary>
-        private void FinalizeLayers()
+        ///
+        public void EnforceLimit()
         {
-
-            this.layers.Clear();
-
-            foreach (ILayer layer in this.network.LayerTags.Values)
+            if (!_connectionLimited)
             {
-                GetLayers(layer);
+                return;
             }
 
-            // make sure that the current ID is not going to cause a repeat
-            foreach (ILayer layer in this.layers)
+            double[] weights = _flat.Weights;
+
+            for (int i = 0; i < weights.Length; i++)
             {
-                if (layer.ID >= this.nextID)
+                if (Math.Abs(weights[i]) < _connectionLimit)
                 {
-                    this.nextID = layer.ID + 1;
+                    weights[i] = 0;
                 }
             }
+        }
 
-            Sort();
+        /// <summary>
+        /// Parse/finalize the limit value for connections.
+        /// </summary>
+        ///
+        public void FinalizeLimit()
+        {
+            // see if there is a connection limit imposed
+            String limit = _network
+                .GetPropertyString(BasicNetwork.TagLimit);
+            if (limit != null)
+            {
+                try
+                {
+                    _connectionLimited = true;
+                    _connectionLimit = CSVFormat.EgFormat.Parse(limit);
+                    EnforceLimit();
+                }
+                catch (FormatException )
+                {
+                    throw new NeuralNetworkError("Invalid property("
+                                                 + BasicNetwork.TagLimit + "):" + limit);
+                }
+            }
+            else
+            {
+                _connectionLimited = false;
+                _connectionLimit = 0;
+            }
         }
 
         /// <summary>
@@ -216,680 +190,71 @@ namespace Encog.Neural.Networks.Structure
         /// you are done adding layers to a network, or change the network's logic
         /// property.
         /// </summary>
+        ///
         public void FinalizeStructure()
         {
-            FinalizeLayers();
-            FinalizeSynapses();
+            if (_layers.Count < 2)
+            {
+                throw new NeuralNetworkError(
+                    "There must be at least two layers before the structure is finalized.");
+            }
+
+            var flatLayers = new FlatLayer[_layers.Count];
+
+            for (int i = 0; i < _layers.Count; i++)
+            {
+                var layer = (BasicLayer) _layers[i];
+                if (layer.Activation == null)
+                {
+                    layer.Activation = new ActivationLinear();
+                }
+
+                flatLayers[i] = layer;
+            }
+
+            _flat = new FlatNetwork(flatLayers);
+
             FinalizeLimit();
-            this.layers.Sort();
-            AssignID();
-            this.network.Logic.Init(this.network);
+            _layers.Clear();
             EnforceLimit();
-            Flatten();
         }
 
+
         /// <summary>
-        /// Build the synapse structure.
+        /// Throw an error if there is no flat network.
         /// </summary>
-        private void FinalizeSynapses()
+        ///
+        public void RequireFlat()
         {
-
-            this.synapses.Clear();
-
-            foreach (ILayer layer in Layers)
+            if (_flat == null)
             {
-                foreach (ISynapse synapse in layer.Next)
-                {
-                    this.synapses.Add(synapse);
-                }
+                throw new NeuralNetworkError(
+                    "Must call finalizeStructure before using this network.");
             }
         }
 
         /// <summary>
-        /// Find the specified synapse, throw an error if it is required. 
+        /// Update any properties from the property map.
         /// </summary>
-        /// <param name="fromLayer">The from layer.</param>
-        /// <param name="toLayer">The to layer.</param>
-        /// <param name="required">Is this required?</param>
-        /// <returns>The synapse, if it exists, otherwise null.</returns>
-        public ISynapse FindSynapse(ILayer fromLayer, ILayer toLayer,
-                 bool required)
+        ///
+        public void UpdateProperties()
         {
-            ISynapse result = null;
-            foreach (ISynapse synapse in Synapses)
+            if (_network.Properties.ContainsKey(BasicNetwork.TagLimit))
             {
-                if ((synapse.FromLayer == fromLayer)
-                        && (synapse.ToLayer == toLayer))
-                {
-                    result = synapse;
-                    break;
-                }
-            }
-
-            if (required && (result == null))
-            {
-                String str =
-               "This operation requires a network with a synapse between the "
-                       + NameLayer(fromLayer)
-                       + " layer to the "
-                       + NameLayer(toLayer) + " layer.";
-#if logging
-                if (NeuralStructure.logger.IsErrorEnabled)
-                {
-                    NeuralStructure.logger.Error(str);
-                }
-#endif
-                throw new NeuralNetworkError(str);
-            }
-
-            return result;
-        }
-
-        /// <summary>
-        /// The layers in this neural network.
-        /// </summary>
-        public IList<ILayer> Layers
-        {
-            get
-            {
-                return this.layers;
-            }
-        }
-
-        /// <summary>
-        /// Called to help build the layer structure. 
-        /// </summary>
-        /// <param name="layer">The current layer being processed.</param>
-        private void GetLayers(ILayer layer)
-        {
-
-            if (!this.layers.Contains(layer))
-            {
-                this.layers.Add(layer);
-            }
-
-            foreach (ISynapse synapse in layer.Next)
-            {
-                ILayer nextLayer = synapse.ToLayer;
-
-                if (!this.layers.Contains(nextLayer))
-                {
-                    GetLayers(nextLayer);
-                }
-            }
-        }
-
-        /// <summary>
-        /// The network this structure belongs to.
-        /// </summary>
-        public BasicNetwork Network
-        {
-            get
-            {
-                return this.network;
-            }
-        }
-
-        /// <summary>
-        /// Get the next layer id. 
-        /// </summary>
-        /// <returns>The next layer id.</returns>
-        public int GetNextID()
-        {
-            return this.nextID++;
-        }
-
-        /// <summary>
-        /// Get the previous layers from the specified layer. 
-        /// </summary>
-        /// <param name="targetLayer">The target layer.</param>
-        /// <returns>The previous layers.</returns>
-        public ICollection<ILayer> GetPreviousLayers(ILayer targetLayer)
-        {
-            ICollection<ILayer> result = new List<ILayer>();
-            foreach (ILayer layer in this.Layers)
-            {
-                foreach (ISynapse synapse in layer.Next)
-                {
-                    if (synapse.ToLayer == targetLayer)
-                    {
-                        if (!result.Contains(synapse.FromLayer))
-                        {
-                            result.Add(synapse.FromLayer);
-                        }
-                    }
-                }
-            }
-            return result;
-        }
-
-        /// <summary>
-        /// Get the previous synapses. 
-        /// </summary>
-        /// <param name="targetLayer">The layer to get the previous layers from.</param>
-        /// <returns>A collection of synapses.</returns>
-        public IList<ISynapse> GetPreviousSynapses(ILayer targetLayer)
-        {
-
-            IList<ISynapse> result = new List<ISynapse>();
-
-            foreach (ISynapse synapse in this.synapses)
-            {
-                if (synapse.ToLayer == targetLayer)
-                {
-                    if (!result.Contains(synapse))
-                    {
-                        result.Add(synapse);
-                    }
-                }
-            }
-
-            return result;
-
-        }
-
-        /// <summary>
-        /// All synapses in the neural network.
-        /// </summary>
-        public IList<ISynapse> Synapses
-        {
-            get
-            {
-                return this.synapses;
-            }
-        }
-
-        /// <summary>
-        /// Obtain a name for the specified layer. 
-        /// </summary>
-        /// <param name="layer">The layer to name.</param>
-        /// <returns>The name of this layer.</returns>
-        public IList<String> NameLayer(ILayer layer)
-        {
-            IList<String> result = new List<String>();
-
-            foreach (KeyValuePair<String, ILayer> entry in this.network.LayerTags)
-            {
-                if (entry.Value == layer)
-                {
-                    result.Add(entry.Key);
-                }
-            }
-
-            return result;
-        }
-
-        /// <summary>
-        /// Sort the layers and synapses.
-        /// </summary>
-        public void Sort()
-        {
-            this.layers.Sort(new LayerComparator(this));
-            this.synapses.Sort(new SynapseComparator(this));
-        }
-
-        /// <summary>
-        /// The current connection limit, any connections below this limit 
-        /// are considered disabled.
-        /// </summary>
-        public double ConnectionLimit
-        {
-            get
-            {
-                return this.connectionLimit;
-            }
-        }
-
-        /// <summary>
-        /// True if connection limiting is being used.  If false, all layers 
-        /// are fully connected.
-        /// </summary>
-        public bool IsConnectionLimited
-        {
-            get
-            {
-                return this.connectionLimited;
-            }
-        }
-
-        /// <summary>
-        /// Read the connection limit value from the network properties and 
-        /// finalize the connection limiting.
-        /// </summary>
-        private void FinalizeLimit()
-        {
-            // see if there is a connection limit imposed
-            String limit = this.network.GetPropertyString(BasicNetwork.TAG_LIMIT);
-            if (limit != null)
-            {
-                try
-                {
-                    this.connectionLimited = true;
-                    this.connectionLimit = double.Parse(limit);
-                }
-                catch (Exception)
-                {
-                    throw new NeuralNetworkError(
-                            "Invalid property("
-                            + BasicNetwork.TAG_LIMIT
-                            + "):"
-                            + limit);
-                }
+                _connectionLimit = _network
+                    .GetPropertyDouble(BasicNetwork.TagLimit);
+                _connectionLimited = true;
             }
             else
             {
-                this.connectionLimited = false;
-                this.connectionLimit = 0;
+                _connectionLimited = false;
+                _connectionLimit = 0;
+            }
+
+            if (_flat != null)
+            {
+                _flat.ConnectionLimit = _connectionLimit;
             }
         }
-
-        /// <summary>
-        /// Enforce the connection limit.  Any connections below the limit are removed.
-        /// </summary>
-        public void EnforceLimit()
-        {
-            if (!this.connectionLimited)
-                return;
-
-            foreach (ISynapse synapse in this.synapses)
-            {
-                Matrix matrix = synapse.WeightMatrix;
-                if (matrix != null)
-                {
-                    for (int row = 0; row < matrix.Rows; row++)
-                    {
-                        for (int col = 0; col < matrix.Cols; col++)
-                        {
-                            double value = matrix[row, col];
-                            if (Math.Abs(value) < this.connectionLimit)
-                            {
-                                matrix[row, col] = 0;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Is this network recurrent?  A recurrent network has context layers.
-        /// </summary>
-        /// <returns>True if this network is recurrent.</returns>
-        public bool IsRecurrent()
-        {
-            foreach (ILayer layer in this.layers)
-            {
-                if (layer is ContextLayer)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-
-        /// <summary>
-        /// Create the flat neural network.
-        /// </summary>
-        public void Flatten()
-        {
-            bool isRBF = false;
-            IDictionary<ILayer, FlatLayer> regular2flat = new Dictionary<ILayer, FlatLayer>();
-            IDictionary<FlatLayer, ILayer> flat2regular = new Dictionary<FlatLayer, ILayer>();            
-            IList<ObjectPair<ILayer, ILayer>> contexts = new List<ObjectPair<ILayer, ILayer>>();            
-            this.flat = null;
-
-            ValidateForFlat val = new ValidateForFlat();
-
-            if (val.IsValid(this.network) == null)
-            {
-                if (this.layers.Count == 3
-                        && this.layers[1] is RadialBasisFunctionLayer)
-                {
-                    RadialBasisFunctionLayer rbf = (RadialBasisFunctionLayer)this.layers[1];
-                    this.flat = new FlatNetworkRBF(this.network.InputCount,
-                            rbf.NeuronCount, this.network.OutputCount,
-                            rbf.RadialBasisFunction);
-                    FlattenWeights();
-                    this.flatUpdate = FlatUpdateNeeded.None;
-                    return;
-                }
-
-                int flatLayerCount = CountNonContext();
-                FlatLayer[] flatLayers = new FlatLayer[flatLayerCount];                
-
-                int index = flatLayers.Length - 1;
-                foreach (ILayer layer in this.layers)
-                {
-
-                    if (layer is ContextLayer)
-                    {
-                        ISynapse inboundSynapse = network.Structure
-                                .FindPreviousSynapseByLayerType(layer,
-                                        typeof(BasicLayer));
-                        ISynapse outboundSynapse = network
-                                .Structure
-                                .FindNextSynapseByLayerType(layer, typeof(BasicLayer));
-
-                        if (inboundSynapse == null)
-                            throw new NeuralNetworkError(
-                                    "Context layer must be connected to by one BasicLayer.");
-
-                        if (outboundSynapse == null)
-                            throw new NeuralNetworkError(
-                                    "Context layer must connect to by one BasicLayer.");
-
-                        ILayer inbound = inboundSynapse.FromLayer;
-                        ILayer outbound = outboundSynapse.ToLayer;
-
-                        contexts
-                                .Add(new ObjectPair<ILayer, ILayer>(inbound, outbound));
-                    }
-                    else
-                    {
-                        double bias = this.FindNextBias(layer);
-
-                        IActivationFunction activationType;
-                        double[] param = new double[1];
-
-                        if (layer.ActivationFunction == null)
-                        {
-                            activationType = new ActivationLinear();
-                            param = new double[1];
-                            param[0] = 1;
-                        }
-                        else
-                        {
-                            activationType = layer.ActivationFunction;
-                            param = layer.ActivationFunction.Params;
-                        }
-
-                        FlatLayer flatLayer = new FlatLayer(activationType, layer
-                                .NeuronCount, bias, param);
-
-                        regular2flat[layer] = flatLayer;
-                        flat2regular[flatLayer] = layer;
-                        flatLayers[index--] = flatLayer;
-                    }
-                }
-
-                // now link up the context layers
-                foreach (ObjectPair<ILayer, ILayer> context in contexts)
-                {
-                    // link the context layer on the FlatLayer
-                    ILayer layer = context.B;
-                    ISynapse synapse = this.network
-                            .Structure
-                            .FindPreviousSynapseByLayerType(layer, typeof(BasicLayer));
-                    FlatLayer from = regular2flat[context.A];
-                    FlatLayer to = regular2flat[synapse.FromLayer];
-                    to.ContextFedBy = from;
-                }
-
-                this.flat = new FlatNetwork(flatLayers);
-
-                // update the context indexes on the non-flat network
-                for (int i = 0; i < flatLayerCount; i++)
-                {
-                    FlatLayer fedBy = flatLayers[i].ContextFedBy;
-                    if (fedBy != null)
-                    {
-                        ILayer fedBy2 = flat2regular[flatLayers[i + 1]];
-                        ISynapse synapse = FindPreviousSynapseByLayerType(fedBy2, typeof(ContextLayer));
-                        if (synapse == null)
-                            throw new NeuralNetworkError("Can't find parent synapse to context layer.");
-                        ContextLayer context = (ContextLayer)synapse.FromLayer;
-
-                        // find fedby index
-                        int fedByIndex = -1;
-                        for(int j=0;j<flatLayerCount;j++)
-                        {
-                            if( flatLayers[j]==fedBy )
-                            {
-                                fedByIndex = j;
-                                break;
-                            }
-                        }
-
-                        if (fedByIndex == -1)
-                            throw new NeuralNetworkError("Can't find layer feeding context.");
-
-                        context.FlatContextIndex = this.flat.ContextTargetOffset[fedByIndex];
-                    }
-                }
-
-                // RBF networks will not train every layer
-                if (isRBF)
-                {
-                    this.flat.EndTraining = flatLayers.Length - 1;
-                }
-
-                FlattenWeights();
-
-                if (this.IsConnectionLimited)
-                {
-
-                }
-
-                this.flatUpdate = FlatUpdateNeeded.None;
-            }
-            else
-                this.flatUpdate = FlatUpdateNeeded.Never;
-        }
-
-        /// <summary>
-        /// Flatten the weights of a neural network.
-        /// </summary>
-        public void FlattenWeights()
-        {
-            if (this.flat != null)
-            {
-                this.flatUpdate = FlatUpdateNeeded.Flatten;
-
-                double[] targetWeights = this.flat.Weights;
-                double[] sourceWeights = NetworkCODEC.NetworkToArray(this.network);
-
-                EngineArray.ArrayCopy(sourceWeights, targetWeights);
-                this.flatUpdate = FlatUpdateNeeded.None;
-
-                // update context layers
-                foreach( ILayer layer in this.layers )
-                {
-                    if( layer is ContextLayer )
-                    {
-                        ContextLayer context = (ContextLayer)layer;
-                        if (context.FlatContextIndex != -1)
-                        {
-                            EngineArray.ArrayCopy(
-                                context.Context.Data, 
-                                0, 
-                                this.flat.LayerOutput, 
-                                context.FlatContextIndex, 
-                                context.Context.Count);
-                        }
-                    }
-                }
-                
-
-                // handle limited connection networks
-                if (this.connectionLimited)
-                {
-                    this.flat.ConnectionLimit = this.connectionLimit;
-                }
-                else
-                {
-                    this.flat.ClearConnectionLimit();
-                }
-            }
-        }
-
-        /// <summary>
-        /// The type of flat update that is needed.
-        /// </summary>
-        public FlatUpdateNeeded FlatUpdate
-        {
-            get
-            {
-                return flatUpdate;
-            }
-            set
-            {
-                flatUpdate = value;
-            }
-        }
-
-        /// <summary>
-        /// The flat network.
-        /// </summary>
-        public FlatNetwork Flat
-        {
-            get
-            {
-                return flat;
-            }
-        }
-
-        /// <summary>
-        /// Update the flat network.  Either flatten or unflatten as needed.
-        /// </summary>
-        public void UpdateFlatNetwork()
-        {
-
-            // if flatUpdate is null, the network was likely just loaded from a  serialized file
-            if (this.flatUpdate == null)
-            {
-                FlattenWeights();
-                this.flatUpdate = FlatUpdateNeeded.None;
-            }
-
-            switch (this.flatUpdate)
-            {
-
-                case FlatUpdateNeeded.Flatten:
-                    FlattenWeights();
-                    break;
-
-                case FlatUpdateNeeded.Unflatten:
-                    UnflattenWeights();
-                    break;
-
-                case FlatUpdateNeeded.None:
-                case FlatUpdateNeeded.Never:
-                    return;
-            }
-
-            this.flatUpdate = FlatUpdateNeeded.None;
-        }
-
-        /// <summary>
-        /// Find the next bias layer for a given layer.
-        /// </summary>
-        /// <param name="layer">The layer to search from.</param>
-        /// <returns>The layer bias.</returns>
-        private double FindNextBias(ILayer layer)
-        {
-            double bias = FlatNetwork.NO_BIAS_ACTIVATION;
-
-            if (layer.Next.Count > 0)
-            {
-                ISynapse synapse = network.Structure
-                        .FindNextSynapseByLayerType(layer, typeof(BasicLayer));
-                if (synapse != null)
-                {
-                    ILayer nextLayer = synapse.ToLayer;
-                    if (nextLayer.HasBias)
-                        bias = nextLayer.BiasActivation;
-                }
-            }
-            return bias;
-        }
-
-        /// <summary>
-        /// Unflatten the weights, copy the flat network weights to the
-        /// neural network weight matrixes.
-        /// </summary>
-        public void UnflattenWeights()
-        {
-            if (flat != null)
-            {
-                double[] sourceWeights = flat.Weights;
-                NetworkCODEC.ArrayToNetwork(sourceWeights, network);
-                this.flatUpdate = FlatUpdateNeeded.None;
-
-                // update context layers
-                foreach (ILayer layer in this.layers)
-                {
-                    if (layer is ContextLayer)
-                    {
-                        ContextLayer context = (ContextLayer)layer;
-                        if (context.FlatContextIndex != -1)
-                        {
-
-                            EngineArray.ArrayCopy(
-                                this.flat.LayerOutput, 
-                                context.FlatContextIndex, 
-                                context.Context.Data, 
-                                0, 
-                                context.Context.Count);
-                        }
-                    }
-                }
-
-            }
-        }
-
-        /// <summary>
-        /// Count the non-context layers in a network.
-        /// </summary>
-        /// <returns>The number of layers that are not contextual.</returns>
-        private int CountNonContext()
-        {
-            int result = 0;
-
-            foreach (ILayer layer in this.Layers)
-            {
-                if (layer.GetType() != typeof(ContextLayer))
-                    result++;
-            }
-
-            return result;
-        }
-
-        /// <summary>
-        /// Find the previous synapse of a layer type.
-        /// </summary>
-        /// <param name="layer">The layer to search from.</param>
-        /// <param name="type">The layer type.</param>
-        /// <returns></returns>
-
-        public ISynapse FindPreviousSynapseByLayerType(ILayer layer,
-                Type type)
-        {
-            foreach (ISynapse synapse in GetPreviousSynapses(layer))
-            {
-                if (synapse.FromLayer.GetType() == type)
-                    return synapse;
-            }
-            return null;
-        }
-
-        /// <summary>
-        /// Find the next synapse of a layer type.
-        /// </summary>
-        /// <param name="layer">The layer to search from.</param>
-        /// <param name="type">The layer type.</param>
-        /// <returns></returns>
-        public ISynapse FindNextSynapseByLayerType(ILayer layer,
-                Type type)
-        {
-            foreach (ISynapse synapse in layer.Next)
-            {
-                if (synapse.ToLayer.GetType() == type)
-                    return synapse;
-            }
-            return null;
-        }
-
     }
 }

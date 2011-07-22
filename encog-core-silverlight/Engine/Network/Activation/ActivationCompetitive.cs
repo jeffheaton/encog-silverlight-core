@@ -1,37 +1,30 @@
-/*
- * Encog(tm) Core v2.5 - Java Version
- * http://www.heatonresearch.com/encog/
- * http://code.google.com/p/encog-java/
- 
- * Copyright 2008-2010 Heaton Research, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *   
- * For more information on Heaton Research copyrights, licenses 
- * and trademarks visit:
- * http://www.heatonresearch.com/copyright
- */
+//
+// Encog(tm) Core v3.0 - .Net Version
+// http://www.heatonresearch.com/encog/
+//
+// Copyright 2008-2011 Heaton Research, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
+using System;
+using Encog.Neural;
 
 namespace Encog.Engine.Network.Activation
 {
-
-    using Encog.Engine;
-    using System;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.ComponentModel;
-    using System.Runtime.CompilerServices;
-
     /// <summary>
     /// An activation function that only allows a specified number, usually one, of
     /// the out-bound connection to win. These connections will share in the sum of
@@ -43,18 +36,17 @@ namespace Encog.Engine.Network.Activation
 #endif
     public class ActivationCompetitive : IActivationFunction
     {
-
         /// <summary>
         /// The offset to the parameter that holds the max winners.
         /// </summary>
         ///
-        public const int PARAM_COMPETITIVE_MAX_WINNERS = 0;
+        public const int ParamCompetitiveMaxWinners = 0;
 
         /// <summary>
         /// The parameters.
         /// </summary>
         ///
-        private readonly double[] paras;
+        private readonly double[] _paras;
 
         /// <summary>
         /// Create a competitive activation function with one winner allowed.
@@ -73,21 +65,21 @@ namespace Encog.Engine.Network.Activation
         /// <param name="winners">The maximum number of winners that this function supports.</param>
         public ActivationCompetitive(int winners)
         {
-            this.paras = new double[1];
-            this.paras[ActivationCompetitive.PARAM_COMPETITIVE_MAX_WINNERS] = winners;
+            _paras = new double[1];
+            _paras[ParamCompetitiveMaxWinners] = winners;
         }
 
         /// <inheritdoc />
         public virtual void ActivationFunction(double[] x, int start,
-                int size)
+                                               int size)
         {
-            bool[] winners = new bool[x.Length];
+            var winners = new bool[x.Length];
             double sumWinners = 0;
 
             // find the desired number of winners
-            for (int i = 0; i < paras[0]; i++)
+            for (int i = 0; i < _paras[0]; i++)
             {
-                double maxFound = System.Double.NegativeInfinity;
+                double maxFound = Double.NegativeInfinity;
                 int winner = -1;
 
                 // find one winner
@@ -104,18 +96,17 @@ namespace Encog.Engine.Network.Activation
             }
 
             // adjust weights for winners and non-winners
-            for (int i_0 = start; i_0 < start + size; i_0++)
+            for (int i = start; i < start + size; i++)
             {
-                if (winners[i_0])
+                if (winners[i])
                 {
-                    x[i_0] = x[i_0] / sumWinners;
+                    x[i] = x[i]/sumWinners;
                 }
                 else
                 {
-                    x[i_0] = 0.0d;
+                    x[i] = 0.0d;
                 }
             }
-
         }
 
         /// <summary>
@@ -125,23 +116,15 @@ namespace Encog.Engine.Network.Activation
         object ICloneable.Clone()
         {
             return new ActivationCompetitive(
-                    (int)this.paras[ActivationCompetitive.PARAM_COMPETITIVE_MAX_WINNERS]);
+                (int) _paras[ParamCompetitiveMaxWinners]);
         }
 
-        /// <summary>
-        /// Implements the activation function. The array is modified according to
-        /// the activation function being used. See the class description for more
-        /// specific information on this type of activation function.
-        /// </summary>
-        ///
-        /// <param name="d">The input array to the activation function.</param>
-        /// <returns>The derivative.</returns>
-        public virtual double DerivativeFunction(double d)
+        /// <inheritdoc/>
+        public virtual double DerivativeFunction(double b, double a)
         {
-            throw new EncogEngineError(
-                    "Can't use the competitive activation function "
-                            + "where a derivative is required.");
-
+            throw new NeuralNetworkError(
+                "Can't use the competitive activation function "
+                + "where a derivative is required.");
         }
 
 
@@ -150,19 +133,16 @@ namespace Encog.Engine.Network.Activation
         /// </summary>
         public int MaxWinners
         {
-            get
-            {
-                return (int)this.paras[ActivationCompetitive.PARAM_COMPETITIVE_MAX_WINNERS];
-            }
+            get { return (int) _paras[ParamCompetitiveMaxWinners]; }
         }
 
 
         /// <inheritdoc />
         public virtual String[] ParamNames
-        {          
+        {
             get
             {
-                String[] result = { "maxWinners" };
+                String[] result = {"maxWinners"};
                 return result;
             }
         }
@@ -171,30 +151,14 @@ namespace Encog.Engine.Network.Activation
         /// <inheritdoc />
         public virtual double[] Params
         {
-            get
-            {
-                return this.paras;
-            }
+            get { return _paras; }
         }
-
 
 
         /// <returns>False, indication that no derivative is available for thisfunction.</returns>
         public virtual bool HasDerivative()
         {
             return false;
-        }
-
-        /// <inheritdoc />
-        public virtual void SetParam(int index, double value_ren)
-        {
-            this.paras[index] = value_ren;
-        }
-
-        /// <inheritdoc />
-        public virtual String GetOpenCLExpression(bool derivative)
-        {
-            return null;
         }
     }
 }

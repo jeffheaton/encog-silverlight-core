@@ -1,36 +1,27 @@
-// Encog(tm) Artificial Intelligence Framework v2.5
-// .Net Version
+//
+// Encog(tm) Core v3.0 - .Net Version
 // http://www.heatonresearch.com/encog/
-// http://code.google.com/p/encog-java/
-// 
-// Copyright 2008-2010 by Heaton Research Inc.
-// 
-// Released under the LGPL.
 //
-// This is free software; you can redistribute it and/or modify it
-// under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 2.1 of
-// the License, or (at your option) any later version.
+// Copyright 2008-2011 Heaton Research, Inc.
 //
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-// Lesser General Public License for more details.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// You should have received a copy of the GNU Lesser General Public
-// License along with this software; if not, write to the Free
-// Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-// 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-// 
-// Encog and Heaton Research are Trademarks of Heaton Research, Inc.
-// For information on Heaton Research trademarks, visit:
-// 
-// http://www.heatonresearch.com/copyright.html
-
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
 #if !SILVERLIGHT
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 
 namespace Encog.Bot.Browse.Range
@@ -41,11 +32,10 @@ namespace Encog.Bot.Browse.Range
     /// </summary>
     public class Input : FormElement
     {
-
         /// <summary>
         /// The type of input element that this is.
         /// </summary>
-        private String type;
+        private String _type;
 
         /// <summary>
         /// Construct this Input element.
@@ -54,7 +44,6 @@ namespace Encog.Bot.Browse.Range
         public Input(WebPage source)
             : base(source)
         {
-
         }
 
         /// <summary>
@@ -62,14 +51,8 @@ namespace Encog.Bot.Browse.Range
         /// </summary>
         public String Type
         {
-            get
-            {
-                return this.type;
-            }
-            set
-            {
-                this.type = value;
-            }
+            get { return _type; }
+            set { _type = value; }
         }
 
         /// <summary>
@@ -79,10 +62,7 @@ namespace Encog.Bot.Browse.Range
         /// </summary>
         public override bool AutoSend
         {
-            get
-            {
-                return string.Compare(this.type, "submit", true) != 0;
-            }
+            get { return string.Compare(_type, "submit", true) != 0; }
         }
 
         /// <summary>
@@ -91,18 +71,18 @@ namespace Encog.Bot.Browse.Range
         /// <returns>This object as a string.</returns>
         public override String ToString()
         {
-            StringBuilder builder = new StringBuilder();
+            var builder = new StringBuilder();
             builder.Append("[Input:");
             builder.Append("type=");
-            builder.Append(this.Type);
+            builder.Append(Type);
             builder.Append(",name=");
-            builder.Append(this.Name);
+            builder.Append(Name);
             builder.Append(",value=");
-            builder.Append(this.Value);
+            builder.Append(Value);
             builder.Append("]");
             return builder.ToString();
         }
     }
-
 }
+
 #endif

@@ -1,68 +1,60 @@
-// Encog(tm) Artificial Intelligence Framework v2.5
-// .Net Version
+//
+// Encog(tm) Core v3.0 - .Net Version
 // http://www.heatonresearch.com/encog/
-// http://code.google.com/p/encog-java/
-// 
-// Copyright 2008-2010 by Heaton Research Inc.
-// 
-// Released under the LGPL.
 //
-// This is free software; you can redistribute it and/or modify it
-// under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 2.1 of
-// the License, or (at your option) any later version.
+// Copyright 2008-2011 Heaton Research, Inc.
 //
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-// Lesser General Public License for more details.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// You should have received a copy of the GNU Lesser General Public
-// License along with this software; if not, write to the Free
-// Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-// 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-// 
-// Encog and Heaton Research are Trademarks of Heaton Research, Inc.
-// For information on Heaton Research trademarks, visit:
-// 
-// http://www.heatonresearch.com/copyright.html
-
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace Encog.Util.Time
 {
-    class EnglishTimeUnitNames: ITimeUnitNames
+    internal class EnglishTimeUnitNames : ITimeUnitNames
     {
+        #region ITimeUnitNames Members
+
         public String Code(TimeUnit unit)
         {
             switch (unit)
             {
-                case TimeUnit.SECONDS:
+                case TimeUnit.Seconds:
                     return "sec";
-                case TimeUnit.MINUTES:
+                case TimeUnit.Minutes:
                     return "min";
-                case TimeUnit.HOURS:
+                case TimeUnit.Hours:
                     return "hr";
-                case TimeUnit.DAYS:
+                case TimeUnit.Days:
                     return "d";
-                case TimeUnit.WEEKS:
+                case TimeUnit.Weeks:
                     return "w";
-                case TimeUnit.FORTNIGHTS:
+                case TimeUnit.Fortnights:
                     return "fn";
-                case TimeUnit.MONTHS:
+                case TimeUnit.Months:
                     return "m";
-                case TimeUnit.YEARS:
+                case TimeUnit.Years:
                     return "y";
-                case TimeUnit.DECADES:
+                case TimeUnit.Decades:
                     return "dec";
-                case TimeUnit.SCORES:
+                case TimeUnit.Scores:
                     return "sc";
-                case TimeUnit.CENTURIES:
+                case TimeUnit.Centuries:
                     return "c";
-                case TimeUnit.MILLENNIA:
+                case TimeUnit.Millennia:
                     return "m";
                 default:
                     return "unk";
@@ -73,29 +65,29 @@ namespace Encog.Util.Time
         {
             switch (unit)
             {
-                case TimeUnit.SECONDS:
+                case TimeUnit.Seconds:
                     return "seconds";
-                case TimeUnit.MINUTES:
+                case TimeUnit.Minutes:
                     return "minutes";
-                case TimeUnit.HOURS:
+                case TimeUnit.Hours:
                     return "hours";
-                case TimeUnit.DAYS:
+                case TimeUnit.Days:
                     return "days";
-                case TimeUnit.WEEKS:
+                case TimeUnit.Weeks:
                     return "weeks";
-                case TimeUnit.FORTNIGHTS:
+                case TimeUnit.Fortnights:
                     return "fortnights";
-                case TimeUnit.MONTHS:
+                case TimeUnit.Months:
                     return "months";
-                case TimeUnit.YEARS:
+                case TimeUnit.Years:
                     return "years";
-                case TimeUnit.DECADES:
+                case TimeUnit.Decades:
                     return "decades";
-                case TimeUnit.SCORES:
+                case TimeUnit.Scores:
                     return "scores";
-                case TimeUnit.CENTURIES:
+                case TimeUnit.Centuries:
                     return "centures";
-                case TimeUnit.MILLENNIA:
+                case TimeUnit.Millennia:
                     return "millennia";
                 default:
                     return "unknowns";
@@ -106,33 +98,35 @@ namespace Encog.Util.Time
         {
             switch (unit)
             {
-                case TimeUnit.SECONDS:
+                case TimeUnit.Seconds:
                     return "second";
-                case TimeUnit.MINUTES:
+                case TimeUnit.Minutes:
                     return "minute";
-                case TimeUnit.HOURS:
+                case TimeUnit.Hours:
                     return "hour";
-                case TimeUnit.DAYS:
+                case TimeUnit.Days:
                     return "day";
-                case TimeUnit.WEEKS:
+                case TimeUnit.Weeks:
                     return "week";
-                case TimeUnit.FORTNIGHTS:
+                case TimeUnit.Fortnights:
                     return "fortnight";
-                case TimeUnit.MONTHS:
+                case TimeUnit.Months:
                     return "month";
-                case TimeUnit.YEARS:
+                case TimeUnit.Years:
                     return "year";
-                case TimeUnit.DECADES:
+                case TimeUnit.Decades:
                     return "decade";
-                case TimeUnit.SCORES:
+                case TimeUnit.Scores:
                     return "score";
-                case TimeUnit.CENTURIES:
+                case TimeUnit.Centuries:
                     return "century";
-                case TimeUnit.MILLENNIA:
+                case TimeUnit.Millennia:
                     return "millenium";
                 default:
                     return "unknown";
             }
         }
+
+        #endregion
     }
 }

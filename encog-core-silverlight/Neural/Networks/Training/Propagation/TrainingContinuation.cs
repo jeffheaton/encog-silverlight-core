@@ -1,95 +1,96 @@
-// Encog(tm) Artificial Intelligence Framework v2.5
-// .Net Version
+//
+// Encog(tm) Core v3.0 - .Net Version
 // http://www.heatonresearch.com/encog/
-// http://code.google.com/p/encog-java/
-// 
-// Copyright 2008-2010 by Heaton Research Inc.
-// 
-// Released under the LGPL.
 //
-// This is free software; you can redistribute it and/or modify it
-// under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 2.1 of
-// the License, or (at your option) any later version.
+// Copyright 2008-2011 Heaton Research, Inc.
 //
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-// Lesser General Public License for more details.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// You should have received a copy of the GNU Lesser General Public
-// License along with this software; if not, write to the Free
-// Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-// 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-// 
-// Encog and Heaton Research are Trademarks of Heaton Research, Inc.
-// For information on Heaton Research trademarks, visit:
-// 
-// http://www.heatonresearch.com/copyright.html
-
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Encog.Persist;
-using Encog.Persist.Persistors;
 
 namespace Encog.Neural.Networks.Training.Propagation
 {
     /// <summary>
-    /// Allows training to contune.
+    /// Allows training to be continued.
     /// </summary>
-    public class TrainingContinuation : BasicPersistedObject
+#if !SILVERLIGHT
+    [Serializable]
+#endif
+    public class TrainingContinuation
     {
         /// <summary>
         /// The contents of this object.
         /// </summary>
-        private IDictionary<String, Object> contents = new Dictionary<String, Object>();
+        ///
+        private readonly IDictionary<String, Object> _contents;
 
         /// <summary>
-        /// Obtain a persistor for this object.
+        /// Construct the object.
         /// </summary>
-        /// <returns>A persistor for this object.</returns>
-        public override IPersistor CreatePersistor()
+        public TrainingContinuation()
         {
-            return new TrainingContinuationPersistor();
+            _contents = new Dictionary<String, Object>();
         }
 
-        /// <summary>
-        /// Get the specified object.
-        /// </summary>
-        /// <param name="key">The key.</param>
-        /// <returns>The object.</returns>
-        public Object this[String key]
-        {
-            get
-            {
-                return this.contents[key];
-            }
-            set
-            {
-                this.contents[key] = value;
-            }
-        }
 
-        /// <summary>
-        /// The contents.
-        /// </summary>
+        /// <value>The contents.</value>
         public IDictionary<String, Object> Contents
         {
-            get
-            {
-                return this.contents;
-            }
+            get { return _contents; }
+        }
+
+        /// <value>the trainingType to set</value>
+        public String TrainingType { 
+            get; 
+            set; }
+
+        /// <summary>
+        /// Get an object by name.
+        /// </summary>
+        ///
+        /// <param name="name">The name of the object.</param>
+        /// <returns>The object requested.</returns>
+        public Object Get(String name)
+        {
+            return _contents[name];
+        }
+
+
+        /// <summary>
+        /// Save a list of doubles.
+        /// </summary>
+        ///
+        /// <param name="key">The key to save them under.</param>
+        /// <param name="list">The list of doubles.</param>
+        public void Put(String key, double[] list)
+        {
+            _contents[key] = list;
         }
 
         /// <summary>
-        /// Not supported.
+        /// Set a value to a string.
         /// </summary>
-        /// <returns>Not supported.</returns>
-        public override object Clone()
+        ///
+        /// <param name="name">The value to set.</param>
+        /// <param name="v">The value.</param>
+        public void Set(String name, Object v)
         {
-            throw new NotImplementedException();
+            _contents[name] = v;
         }
     }
 }

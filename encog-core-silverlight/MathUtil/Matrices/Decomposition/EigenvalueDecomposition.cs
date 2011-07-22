@@ -1,38 +1,27 @@
-// Encog(tm) Artificial Intelligence Framework v2.5
-// .Net Version
+//
+// Encog(tm) Core v3.0 - .Net Version
 // http://www.heatonresearch.com/encog/
-// http://code.google.com/p/encog-java/
-// 
-// Copyright 2008-2010 by Heaton Research Inc.
-// 
-// Released under the LGPL.
 //
-// This is free software; you can redistribute it and/or modify it
-// under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 2.1 of
-// the License, or (at your option) any later version.
+// Copyright 2008-2011 Heaton Research, Inc.
 //
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-// Lesser General Public License for more details.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// You should have received a copy of the GNU Lesser General Public
-// License along with this software; if not, write to the Free
-// Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-// 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-// 
-// Encog and Heaton Research are Trademarks of Heaton Research, Inc.
-// For information on Heaton Research trademarks, visit:
-// 
-// http://www.heatonresearch.com/copyright.html
-
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using Encog.Util;
-using Encog.Engine.Util;
 
 namespace Encog.MathUtil.Matrices.Decomposition
 {
@@ -57,39 +46,39 @@ namespace Encog.MathUtil.Matrices.Decomposition
     public class EigenvalueDecomposition
     {
         /// <summary>
-        /// Row and column dimension (square matrix).
+        /// Arrays for internal storage of eigenvalues.
         /// </summary>
-        private int n;
-
-        /// <summary>
-        /// Symmetry flag.
-        /// </summary>
-        private bool issymmetric;
+        private readonly double[] d;
 
         /// <summary>
         /// Arrays for internal storage of eigenvalues.
         /// </summary>
-        private double[] d, e;
-
-        /// <summary>
-        /// Array for internal storage of eigenvectors.
-        /// </summary>
-        private double[][] v;
+        private readonly double[] e;
 
         /// <summary>
         /// Array for internal storage of nonsymmetric Hessenberg form.
         /// </summary>
-        private double[][] h;
+        private readonly double[][] h;
+
+        /// <summary>
+        /// Symmetry flag.
+        /// </summary>
+        private readonly bool issymmetric;
+
+        /// <summary>
+        /// Row and column dimension (square matrix).
+        /// </summary>
+        private readonly int n;
 
         /// <summary>
         /// Working storage for nonsymmetric algorithm.
         /// </summary>
-        private double[] ort;
+        private readonly double[] ort;
 
         /// <summary>
-        /// Complex scalar division.
+        /// Array for internal storage of eigenvectors.
         /// </summary>
-        private double cdivr;
+        private readonly double[][] v;
 
         /// <summary>
         /// Complex scalar division.
@@ -97,11 +86,119 @@ namespace Encog.MathUtil.Matrices.Decomposition
         private double cdivi;
 
         /// <summary>
+        /// Complex scalar division.
+        /// </summary>
+        private double cdivr;
+
+        /// <summary>
+        /// Check for symmetry, then construct the eigenvalue decomposition
+        /// </summary>
+        /// <param name="matrix">Square matrix</param>
+        public EigenvalueDecomposition(Matrix matrix)
+        {
+            double[][] a = matrix.Data;
+            n = matrix.Cols;
+            v = EngineArray.AllocateDouble2D(n, n);
+            d = new double[n];
+            e = new double[n];
+
+            issymmetric = true;
+            for (int j = 0; (j < n) & issymmetric; j++)
+            {
+                for (int i = 0; (i < n) & issymmetric; i++)
+                {
+                    issymmetric = (a[i][j] == a[j][i]);
+                }
+            }
+
+            if (issymmetric)
+            {
+                for (int i = 0; i < n; i++)
+                {
+                    for (int j = 0; j < n; j++)
+                    {
+                        v[i][j] = a[i][j];
+                    }
+                }
+
+                // Tridiagonalize.
+                Tred2();
+
+                // Diagonalize.
+                Tql2();
+            }
+            else
+            {
+                h = EngineArray.AllocateDouble2D(n, n);
+                ort = new double[n];
+
+                for (int j = 0; j < n; j++)
+                {
+                    for (int i = 0; i < n; i++)
+                    {
+                        h[i][j] = a[i][j];
+                    }
+                }
+
+                // Reduce to Hessenberg form.
+                Orthes();
+
+                // Reduce Hessenberg to real Schur form.
+                Hqr2();
+            }
+        }
+
+
+        /// <summary>
+        /// Return the eigenvector matrix.
+        /// </summary>
+        public Matrix V
+        {
+            get { return new Matrix(v); }
+        }
+
+        /// <summary>
+        /// Return the real parts of the eigenvalues.
+        /// </summary>
+        public double[] RealEigenvalues
+        {
+            get { return d; }
+        }
+
+        /// <summary>
+        /// Return the block diagonal eigenvalue matrix
+        /// </summary>
+        public Matrix D
+        {
+            get
+            {
+                var result = new Matrix(n, n);
+                double[][] resultMatrix = result.Data;
+                for (int i = 0; i < n; i++)
+                {
+                    for (int j = 0; j < n; j++)
+                    {
+                        resultMatrix[i][j] = 0.0;
+                    }
+                    resultMatrix[i][i] = d[i];
+                    if (e[i] > 0)
+                    {
+                        resultMatrix[i][i + 1] = e[i];
+                    }
+                    else if (e[i] < 0)
+                    {
+                        resultMatrix[i][i - 1] = e[i];
+                    }
+                }
+                return result;
+            }
+        }
+
+        /// <summary>
         /// Symmetric Householder reduction to tridiagonal form.
         /// </summary>
         private void Tred2()
         {
-
             // This is derived from the Algol procedures tred2 by
             // Bowdler, Martin, Reinsch, and Wilkinson, Handbook for
             // Auto. Comp., Vol.ii-Linear Algebra, and the corresponding
@@ -116,7 +213,6 @@ namespace Encog.MathUtil.Matrices.Decomposition
 
             for (int i = n - 1; i > 0; i--)
             {
-
                 // Scale to avoid under/overflow.
 
                 double scale = 0.0;
@@ -137,13 +233,12 @@ namespace Encog.MathUtil.Matrices.Decomposition
                 }
                 else
                 {
-
                     // Generate Householder vector.
 
                     for (int k = 0; k < i; k++)
                     {
                         d[k] /= scale;
-                        h += d[k] * d[k];
+                        h += d[k]*d[k];
                     }
                     double f = d[i - 1];
                     double g = Math.Sqrt(h);
@@ -151,8 +246,8 @@ namespace Encog.MathUtil.Matrices.Decomposition
                     {
                         g = -g;
                     }
-                    e[i] = scale * g;
-                    h = h - f * g;
+                    e[i] = scale*g;
+                    h = h - f*g;
                     d[i - 1] = f - g;
                     for (int j = 0; j < i; j++)
                     {
@@ -165,11 +260,11 @@ namespace Encog.MathUtil.Matrices.Decomposition
                     {
                         f = d[j];
                         v[j][i] = f;
-                        g = e[j] + v[j][j] * f;
+                        g = e[j] + v[j][j]*f;
                         for (int k = j + 1; k <= i - 1; k++)
                         {
-                            g += v[k][j] * d[k];
-                            e[k] += v[k][j] * f;
+                            g += v[k][j]*d[k];
+                            e[k] += v[k][j]*f;
                         }
                         e[j] = g;
                     }
@@ -177,12 +272,12 @@ namespace Encog.MathUtil.Matrices.Decomposition
                     for (int j = 0; j < i; j++)
                     {
                         e[j] /= h;
-                        f += e[j] * d[j];
+                        f += e[j]*d[j];
                     }
-                    double hh = f / (h + h);
+                    double hh = f/(h + h);
                     for (int j = 0; j < i; j++)
                     {
-                        e[j] -= hh * d[j];
+                        e[j] -= hh*d[j];
                     }
                     for (int j = 0; j < i; j++)
                     {
@@ -190,7 +285,7 @@ namespace Encog.MathUtil.Matrices.Decomposition
                         g = e[j];
                         for (int k = j; k <= i - 1; k++)
                         {
-                            v[k][j] -= (f * e[k] + g * d[k]);
+                            v[k][j] -= (f*e[k] + g*d[k]);
                         }
                         d[j] = v[i - 1][j];
                         v[i][j] = 0.0;
@@ -210,18 +305,18 @@ namespace Encog.MathUtil.Matrices.Decomposition
                 {
                     for (int k = 0; k <= i; k++)
                     {
-                        d[k] = v[k][i + 1] / h;
+                        d[k] = v[k][i + 1]/h;
                     }
                     for (int j = 0; j <= i; j++)
                     {
                         double g = 0.0;
                         for (int k = 0; k <= i; k++)
                         {
-                            g += v[k][i + 1] * v[k][j];
+                            g += v[k][i + 1]*v[k][j];
                         }
                         for (int k = 0; k <= i; k++)
                         {
-                            v[k][j] -= g * d[k];
+                            v[k][j] -= g*d[k];
                         }
                     }
                 }
@@ -244,7 +339,6 @@ namespace Encog.MathUtil.Matrices.Decomposition
         /// </summary>
         private void Tql2()
         {
-
             // This is derived from the Algol procedures tql2, by
             // Bowdler, Martin, Reinsch, and Wilkinson, Handbook for
             // Auto. Comp., Vol.ii-Linear Algebra, and the corresponding
@@ -261,14 +355,13 @@ namespace Encog.MathUtil.Matrices.Decomposition
             double eps = Math.Pow(2.0, -52.0);
             for (int l = 0; l < n; l++)
             {
-
                 // Find small subdiagonal element
 
                 tst1 = Math.Max(tst1, Math.Abs(d[l]) + Math.Abs(e[l]));
                 int m = l;
                 while (m < n)
                 {
-                    if (Math.Abs(e[m]) <= eps * tst1)
+                    if (Math.Abs(e[m]) <= eps*tst1)
                     {
                         break;
                     }
@@ -288,14 +381,14 @@ namespace Encog.MathUtil.Matrices.Decomposition
                         // Compute implicit shift
 
                         double g = d[l];
-                        double p = (d[l + 1] - g) / (2.0 * e[l]);
+                        double p = (d[l + 1] - g)/(2.0*e[l]);
                         double r = EncogMath.Hypot(p, 1.0);
                         if (p < 0)
                         {
                             r = -r;
                         }
-                        d[l] = e[l] / (p + r);
-                        d[l + 1] = e[l] * (p + r);
+                        d[l] = e[l]/(p + r);
+                        d[l + 1] = e[l]*(p + r);
                         double dl1 = d[l + 1];
                         double h = g - d[l];
                         for (int i = l + 2; i < n; i++)
@@ -318,31 +411,30 @@ namespace Encog.MathUtil.Matrices.Decomposition
                             c3 = c2;
                             c2 = c;
                             s2 = s;
-                            g = c * e[i];
-                            h = c * p;
+                            g = c*e[i];
+                            h = c*p;
                             r = EncogMath.Hypot(p, e[i]);
-                            e[i + 1] = s * r;
-                            s = e[i] / r;
-                            c = p / r;
-                            p = c * d[i] - s * g;
-                            d[i + 1] = h + s * (c * g + s * d[i]);
+                            e[i + 1] = s*r;
+                            s = e[i]/r;
+                            c = p/r;
+                            p = c*d[i] - s*g;
+                            d[i + 1] = h + s*(c*g + s*d[i]);
 
                             // Accumulate transformation.
 
                             for (int k = 0; k < n; k++)
                             {
                                 h = v[k][i + 1];
-                                v[k][i + 1] = s * v[k][i] + c * h;
-                                v[k][i] = c * v[k][i] - s * h;
+                                v[k][i + 1] = s*v[k][i] + c*h;
+                                v[k][i] = c*v[k][i] - s*h;
                             }
                         }
-                        p = -s * s2 * c3 * el1 * e[l] / dl1;
-                        e[l] = s * p;
-                        d[l] = c * p;
+                        p = -s*s2*c3*el1*e[l]/dl1;
+                        e[l] = s*p;
+                        d[l] = c*p;
 
                         // Check for convergence.
-
-                    } while (Math.Abs(e[l]) > eps * tst1);
+                    } while (Math.Abs(e[l]) > eps*tst1);
                 }
                 d[l] = d[l] + f;
                 e[l] = 0.0;
@@ -383,13 +475,11 @@ namespace Encog.MathUtil.Matrices.Decomposition
         /// </summary>
         private void Orthes()
         {
-
             int low = 0;
             int high = n - 1;
 
             for (int m = low + 1; m <= high - 1; m++)
             {
-
                 // Scale column.
 
                 double scale = 0.0;
@@ -399,21 +489,20 @@ namespace Encog.MathUtil.Matrices.Decomposition
                 }
                 if (scale != 0.0)
                 {
-
                     // Compute Householder transformation.
 
                     double lh = 0.0;
                     for (int i = high; i >= m; i--)
                     {
-                        ort[i] = h[i][m - 1] / scale;
-                        lh += ort[i] * ort[i];
+                        ort[i] = h[i][m - 1]/scale;
+                        lh += ort[i]*ort[i];
                     }
                     double g = Math.Sqrt(lh);
                     if (ort[m] > 0)
                     {
                         g = -g;
                     }
-                    lh = lh - ort[m] * g;
+                    lh = lh - ort[m]*g;
                     ort[m] = ort[m] - g;
 
                     // Apply Householder similarity transformation
@@ -424,12 +513,12 @@ namespace Encog.MathUtil.Matrices.Decomposition
                         double f = 0.0;
                         for (int i = high; i >= m; i--)
                         {
-                            f += ort[i] * h[i][j];
+                            f += ort[i]*h[i][j];
                         }
-                        f = f / lh;
+                        f = f/lh;
                         for (int i = m; i <= high; i++)
                         {
-                            h[i][j] -= f * ort[i];
+                            h[i][j] -= f*ort[i];
                         }
                     }
 
@@ -438,16 +527,16 @@ namespace Encog.MathUtil.Matrices.Decomposition
                         double f = 0.0;
                         for (int j = high; j >= m; j--)
                         {
-                            f += ort[j] * h[i][j];
+                            f += ort[j]*h[i][j];
                         }
-                        f = f / lh;
+                        f = f/lh;
                         for (int j = m; j <= high; j++)
                         {
-                            h[i][j] -= f * ort[j];
+                            h[i][j] -= f*ort[j];
                         }
                     }
-                    ort[m] = scale * ort[m];
-                    h[m][m - 1] = scale * g;
+                    ort[m] = scale*ort[m];
+                    h[m][m - 1] = scale*g;
                 }
             }
 
@@ -474,13 +563,13 @@ namespace Encog.MathUtil.Matrices.Decomposition
                         double g = 0.0;
                         for (int i = m; i <= high; i++)
                         {
-                            g += ort[i] * v[i][j];
+                            g += ort[i]*v[i][j];
                         }
                         // Double division avoids possible underflow
-                        g = (g / ort[m]) / h[m][m - 1];
+                        g = (g/ort[m])/h[m][m - 1];
                         for (int i = m; i <= high; i++)
                         {
-                            v[i][j] += g * ort[i];
+                            v[i][j] += g*ort[i];
                         }
                     }
                 }
@@ -492,17 +581,17 @@ namespace Encog.MathUtil.Matrices.Decomposition
             double r, d;
             if (Math.Abs(yr) > Math.Abs(yi))
             {
-                r = yi / yr;
-                d = yr + r * yi;
-                cdivr = (xr + r * xi) / d;
-                cdivi = (xi - r * xr) / d;
+                r = yi/yr;
+                d = yr + r*yi;
+                cdivr = (xr + r*xi)/d;
+                cdivi = (xi - r*xr)/d;
             }
             else
             {
-                r = yr / yi;
-                d = yi + r * yr;
-                cdivr = (r * xr + xi) / d;
-                cdivi = (r * xi - xr) / d;
+                r = yr/yi;
+                d = yi + r*yr;
+                cdivr = (r*xr + xi)/d;
+                cdivi = (r*xi - xr)/d;
             }
         }
 
@@ -543,7 +632,6 @@ namespace Encog.MathUtil.Matrices.Decomposition
             int iter = 0;
             while (n >= low)
             {
-
                 // Look for single small sub-diagonal element
 
                 int l = n;
@@ -554,7 +642,7 @@ namespace Encog.MathUtil.Matrices.Decomposition
                     {
                         s = norm;
                     }
-                    if (Math.Abs(h[l][l - 1]) < eps * s)
+                    if (Math.Abs(h[l][l - 1]) < eps*s)
                     {
                         break;
                     }
@@ -573,13 +661,12 @@ namespace Encog.MathUtil.Matrices.Decomposition
                     iter = 0;
 
                     // Two roots found
-
                 }
                 else if (l == n - 1)
                 {
-                    w = h[n][n - 1] * h[n - 1][n];
-                    p = (h[n - 1][n - 1] - h[n][n]) / 2.0;
-                    q = p * p + w;
+                    w = h[n][n - 1]*h[n - 1][n];
+                    p = (h[n - 1][n - 1] - h[n][n])/2.0;
+                    q = p*p + w;
                     z = Math.Sqrt(Math.Abs(q));
                     h[n][n] = h[n][n] + exshift;
                     h[n - 1][n - 1] = h[n - 1][n - 1] + exshift;
@@ -601,25 +688,25 @@ namespace Encog.MathUtil.Matrices.Decomposition
                         d[n] = d[n - 1];
                         if (z != 0.0)
                         {
-                            d[n] = x - w / z;
+                            d[n] = x - w/z;
                         }
                         e[n - 1] = 0.0;
                         e[n] = 0.0;
                         x = h[n][n - 1];
                         s = Math.Abs(x) + Math.Abs(z);
-                        p = x / s;
-                        q = z / s;
-                        r = Math.Sqrt(p * p + q * q);
-                        p = p / r;
-                        q = q / r;
+                        p = x/s;
+                        q = z/s;
+                        r = Math.Sqrt(p*p + q*q);
+                        p = p/r;
+                        q = q/r;
 
                         // Row modification
 
                         for (int j = n - 1; j < nn; j++)
                         {
                             z = h[n - 1][j];
-                            h[n - 1][j] = q * z + p * h[n][j];
-                            h[n][j] = q * h[n][j] - p * z;
+                            h[n - 1][j] = q*z + p*h[n][j];
+                            h[n][j] = q*h[n][j] - p*z;
                         }
 
                         // Column modification
@@ -627,8 +714,8 @@ namespace Encog.MathUtil.Matrices.Decomposition
                         for (int i = 0; i <= n; i++)
                         {
                             z = h[i][n - 1];
-                            h[i][n - 1] = q * z + p * h[i][n];
-                            h[i][n] = q * h[i][n] - p * z;
+                            h[i][n - 1] = q*z + p*h[i][n];
+                            h[i][n] = q*h[i][n] - p*z;
                         }
 
                         // Accumulate transformations
@@ -636,12 +723,11 @@ namespace Encog.MathUtil.Matrices.Decomposition
                         for (int i = low; i <= high; i++)
                         {
                             z = v[i][n - 1];
-                            v[i][n - 1] = q * z + p * v[i][n];
-                            v[i][n] = q * v[i][n] - p * z;
+                            v[i][n - 1] = q*z + p*v[i][n];
+                            v[i][n] = q*v[i][n] - p*z;
                         }
 
                         // Complex pair
-
                     }
                     else
                     {
@@ -654,11 +740,9 @@ namespace Encog.MathUtil.Matrices.Decomposition
                     iter = 0;
 
                     // No convergence yet
-
                 }
                 else
                 {
-
                     // Form shift
 
                     x = h[n][n];
@@ -667,7 +751,7 @@ namespace Encog.MathUtil.Matrices.Decomposition
                     if (l < n)
                     {
                         y = h[n - 1][n - 1];
-                        w = h[n][n - 1] * h[n - 1][n];
+                        w = h[n][n - 1]*h[n - 1][n];
                     }
 
                     // Wilkinson's original ad hoc shift
@@ -680,16 +764,16 @@ namespace Encog.MathUtil.Matrices.Decomposition
                             h[i][i] -= x;
                         }
                         s = Math.Abs(h[n][n - 1]) + Math.Abs(h[n - 1][n - 2]);
-                        x = y = 0.75 * s;
-                        w = -0.4375 * s * s;
+                        x = y = 0.75*s;
+                        w = -0.4375*s*s;
                     }
 
                     // MATLAB's new ad hoc shift
 
                     if (iter == 30)
                     {
-                        s = (y - x) / 2.0;
-                        s = s * s + w;
+                        s = (y - x)/2.0;
+                        s = s*s + w;
                         if (s > 0)
                         {
                             s = Math.Sqrt(s);
@@ -697,7 +781,7 @@ namespace Encog.MathUtil.Matrices.Decomposition
                             {
                                 s = -s;
                             }
-                            s = x - w / ((y - x) / 2.0 + s);
+                            s = x - w/((y - x)/2.0 + s);
                             for (int i = low; i <= n; i++)
                             {
                                 h[i][i] -= s;
@@ -717,20 +801,20 @@ namespace Encog.MathUtil.Matrices.Decomposition
                         z = h[m][m];
                         r = x - z;
                         s = y - z;
-                        p = (r * s - w) / h[m + 1][m] + h[m][m + 1];
+                        p = (r*s - w)/h[m + 1][m] + h[m][m + 1];
                         q = h[m + 1][m + 1] - z - r - s;
                         r = h[m + 2][m + 1];
                         s = Math.Abs(p) + Math.Abs(q) + Math.Abs(r);
-                        p = p / s;
-                        q = q / s;
-                        r = r / s;
+                        p = p/s;
+                        q = q/s;
+                        r = r/s;
                         if (m == l)
                         {
                             break;
                         }
-                        if (Math.Abs(h[m][m - 1]) * (Math.Abs(q) + Math.Abs(r)) < eps
-                                * (Math.Abs(p) * (Math.Abs(h[m - 1][m - 1])
-                                        + Math.Abs(z) + Math.Abs(h[m + 1][m + 1]))))
+                        if (Math.Abs(h[m][m - 1])*(Math.Abs(q) + Math.Abs(r)) < eps
+                            *(Math.Abs(p)*(Math.Abs(h[m - 1][m - 1])
+                                           + Math.Abs(z) + Math.Abs(h[m + 1][m + 1]))))
                         {
                             break;
                         }
@@ -759,16 +843,16 @@ namespace Encog.MathUtil.Matrices.Decomposition
                             x = Math.Abs(p) + Math.Abs(q) + Math.Abs(r);
                             if (x != 0.0)
                             {
-                                p = p / x;
-                                q = q / x;
-                                r = r / x;
+                                p = p/x;
+                                q = q/x;
+                                r = r/x;
                             }
                         }
                         if (x == 0.0)
                         {
                             break;
                         }
-                        s = Math.Sqrt(p * p + q * q + r * r);
+                        s = Math.Sqrt(p*p + q*q + r*r);
                         if (p < 0)
                         {
                             s = -s;
@@ -777,59 +861,59 @@ namespace Encog.MathUtil.Matrices.Decomposition
                         {
                             if (k != m)
                             {
-                                h[k][k - 1] = -s * x;
+                                h[k][k - 1] = -s*x;
                             }
                             else if (l != m)
                             {
                                 h[k][k - 1] = -h[k][k - 1];
                             }
                             p = p + s;
-                            x = p / s;
-                            y = q / s;
-                            z = r / s;
-                            q = q / p;
-                            r = r / p;
+                            x = p/s;
+                            y = q/s;
+                            z = r/s;
+                            q = q/p;
+                            r = r/p;
 
                             // Row modification
 
                             for (int j = k; j < nn; j++)
                             {
-                                p = h[k][j] + q * h[k + 1][j];
+                                p = h[k][j] + q*h[k + 1][j];
                                 if (notlast)
                                 {
-                                    p = p + r * h[k + 2][j];
-                                    h[k + 2][j] = h[k + 2][j] - p * z;
+                                    p = p + r*h[k + 2][j];
+                                    h[k + 2][j] = h[k + 2][j] - p*z;
                                 }
-                                h[k][j] = h[k][j] - p * x;
-                                h[k + 1][j] = h[k + 1][j] - p * y;
+                                h[k][j] = h[k][j] - p*x;
+                                h[k + 1][j] = h[k + 1][j] - p*y;
                             }
 
                             // Column modification
 
                             for (int i = 0; i <= Math.Min(n, k + 3); i++)
                             {
-                                p = x * h[i][k] + y * h[i][k + 1];
+                                p = x*h[i][k] + y*h[i][k + 1];
                                 if (notlast)
                                 {
-                                    p = p + z * h[i][k + 2];
-                                    h[i][k + 2] = h[i][k + 2] - p * r;
+                                    p = p + z*h[i][k + 2];
+                                    h[i][k + 2] = h[i][k + 2] - p*r;
                                 }
                                 h[i][k] = h[i][k] - p;
-                                h[i][k + 1] = h[i][k + 1] - p * q;
+                                h[i][k + 1] = h[i][k + 1] - p*q;
                             }
 
                             // Accumulate transformations
 
                             for (int i = low; i <= high; i++)
                             {
-                                p = x * v[i][k] + y * v[i][k + 1];
+                                p = x*v[i][k] + y*v[i][k + 1];
                                 if (notlast)
                                 {
-                                    p = p + z * v[i][k + 2];
-                                    v[i][k + 2] = v[i][k + 2] - p * r;
+                                    p = p + z*v[i][k + 2];
+                                    v[i][k + 2] = v[i][k + 2] - p*r;
                                 }
                                 v[i][k] = v[i][k] - p;
-                                v[i][k + 1] = v[i][k + 1] - p * q;
+                                v[i][k + 1] = v[i][k + 1] - p*q;
                             }
                         } // (s != 0)
                     } // k loop
@@ -860,7 +944,7 @@ namespace Encog.MathUtil.Matrices.Decomposition
                         r = 0.0;
                         for (int j = l; j <= n; j++)
                         {
-                            r = r + h[i][j] * h[j][n];
+                            r = r + h[i][j]*h[j][n];
                         }
                         if (e[i] < 0.0)
                         {
@@ -874,48 +958,46 @@ namespace Encog.MathUtil.Matrices.Decomposition
                             {
                                 if (w != 0.0)
                                 {
-                                    h[i][n] = -r / w;
+                                    h[i][n] = -r/w;
                                 }
                                 else
                                 {
-                                    h[i][n] = -r / (eps * norm);
+                                    h[i][n] = -r/(eps*norm);
                                 }
 
                                 // Solve real equations
-
                             }
                             else
                             {
                                 x = h[i][i + 1];
                                 y = h[i + 1][i];
-                                q = (d[i] - p) * (d[i] - p) + e[i] * e[i];
-                                t = (x * s - z * r) / q;
+                                q = (d[i] - p)*(d[i] - p) + e[i]*e[i];
+                                t = (x*s - z*r)/q;
                                 h[i][n] = t;
                                 if (Math.Abs(x) > Math.Abs(z))
                                 {
-                                    h[i + 1][n] = (-r - w * t) / x;
+                                    h[i + 1][n] = (-r - w*t)/x;
                                 }
                                 else
                                 {
-                                    h[i + 1][n] = (-s - y * t) / z;
+                                    h[i + 1][n] = (-s - y*t)/z;
                                 }
                             }
 
                             // Overflow control
 
                             t = Math.Abs(h[i][n]);
-                            if ((eps * t) * t > 1)
+                            if ((eps*t)*t > 1)
                             {
                                 for (int j = i; j <= n; j++)
                                 {
-                                    h[j][n] = h[j][n] / t;
+                                    h[j][n] = h[j][n]/t;
                                 }
                             }
                         }
                     }
 
                     // Complex vector
-
                 }
                 else if (q < 0)
                 {
@@ -925,8 +1007,8 @@ namespace Encog.MathUtil.Matrices.Decomposition
 
                     if (Math.Abs(h[n][n - 1]) > Math.Abs(h[n - 1][n]))
                     {
-                        h[n - 1][n - 1] = q / h[n][n - 1];
-                        h[n - 1][n] = -(h[n][n] - p) / h[n][n - 1];
+                        h[n - 1][n - 1] = q/h[n][n - 1];
+                        h[n - 1][n] = -(h[n][n] - p)/h[n][n - 1];
                     }
                     else
                     {
@@ -943,8 +1025,8 @@ namespace Encog.MathUtil.Matrices.Decomposition
                         sa = 0.0;
                         for (int j = l; j <= n; j++)
                         {
-                            ra = ra + h[i][j] * h[j][n - 1];
-                            sa = sa + h[i][j] * h[j][n];
+                            ra = ra + h[i][j]*h[j][n - 1];
+                            sa = sa + h[i][j]*h[j][n];
                         }
                         w = h[i][i] - p;
 
@@ -965,38 +1047,37 @@ namespace Encog.MathUtil.Matrices.Decomposition
                             }
                             else
                             {
-
                                 // Solve complex equations
 
                                 x = h[i][i + 1];
                                 y = h[i + 1][i];
-                                vr = (d[i] - p) * (d[i] - p) + e[i] * e[i] - q * q;
-                                vi = (d[i] - p) * 2.0 * q;
+                                vr = (d[i] - p)*(d[i] - p) + e[i]*e[i] - q*q;
+                                vi = (d[i] - p)*2.0*q;
                                 if (vr == 0.0 & vi == 0.0)
                                 {
                                     vr = eps
-                                            * norm
-                                            * (Math.Abs(w) + Math.Abs(q)
-                                                    + Math.Abs(x) + Math.Abs(y) + Math
-                                                    .Abs(z));
+                                         *norm
+                                         *(Math.Abs(w) + Math.Abs(q)
+                                           + Math.Abs(x) + Math.Abs(y) + Math
+                                                                             .Abs(z));
                                 }
-                                cdiv(x * r - z * ra + q * sa, x * s - z * sa - q
-                                        * ra, vr, vi);
+                                cdiv(x*r - z*ra + q*sa, x*s - z*sa - q
+                                                        *ra, vr, vi);
                                 h[i][n - 1] = cdivr;
                                 h[i][n] = cdivi;
                                 if (Math.Abs(x) > (Math.Abs(z) + Math.Abs(q)))
                                 {
-                                    h[i + 1][n - 1] = (-ra - w * h[i][n - 1] + q
-                                            * h[i][n])
-                                            / x;
-                                    h[i + 1][n] = (-sa - w * h[i][n] - q
-                                            * h[i][n - 1])
-                                            / x;
+                                    h[i + 1][n - 1] = (-ra - w*h[i][n - 1] + q
+                                                       *h[i][n])
+                                                      /x;
+                                    h[i + 1][n] = (-sa - w*h[i][n] - q
+                                                   *h[i][n - 1])
+                                                  /x;
                                 }
                                 else
                                 {
-                                    cdiv(-r - y * h[i][n - 1], -s - y * h[i][n], z,
-                                            q);
+                                    cdiv(-r - y*h[i][n - 1], -s - y*h[i][n], z,
+                                         q);
                                     h[i + 1][n - 1] = cdivr;
                                     h[i + 1][n] = cdivi;
                                 }
@@ -1005,12 +1086,12 @@ namespace Encog.MathUtil.Matrices.Decomposition
                             // Overflow control
 
                             t = Math.Max(Math.Abs(h[i][n - 1]), Math.Abs(h[i][n]));
-                            if ((eps * t) * t > 1)
+                            if ((eps*t)*t > 1)
                             {
                                 for (int j = i; j <= n; j++)
                                 {
-                                    h[j][n - 1] = h[j][n - 1] / t;
-                                    h[j][n] = h[j][n] / t;
+                                    h[j][n - 1] = h[j][n - 1]/t;
+                                    h[j][n] = h[j][n]/t;
                                 }
                             }
                         }
@@ -1040,92 +1121,10 @@ namespace Encog.MathUtil.Matrices.Decomposition
                     z = 0.0;
                     for (int k = low; k <= Math.Min(j, high); k++)
                     {
-                        z = z + v[i][k] * h[k][j];
+                        z = z + v[i][k]*h[k][j];
                     }
                     v[i][j] = z;
                 }
-            }
-        }
-
-        /// <summary>
-        /// Check for symmetry, then construct the eigenvalue decomposition
-        /// </summary>
-        /// <param name="matrix">Square matrix</param>
-        public EigenvalueDecomposition(Matrix matrix)
-        {
-            double[][] a = matrix.Data;
-            n = matrix.Cols;
-            v = EngineArray.AllocateDouble2D(n, n);
-            d = new double[n];
-            e = new double[n];
-
-            issymmetric = true;
-            for (int j = 0; (j < n) & issymmetric; j++)
-            {
-                for (int i = 0; (i < n) & issymmetric; i++)
-                {
-                    issymmetric = (a[i][j] == a[j][i]);
-                }
-            }
-
-            if (issymmetric)
-            {
-                for (int i = 0; i < n; i++)
-                {
-                    for (int j = 0; j < n; j++)
-                    {
-                        v[i][j] = a[i][j];
-                    }
-                }
-
-                // Tridiagonalize.
-                Tred2();
-
-                // Diagonalize.
-                Tql2();
-
-            }
-            else
-            {
-                h = EngineArray.AllocateDouble2D(n, n);
-                ort = new double[n];
-
-                for (int j = 0; j < n; j++)
-                {
-                    for (int i = 0; i < n; i++)
-                    {
-                        h[i][j] = a[i][j];
-                    }
-                }
-
-                // Reduce to Hessenberg form.
-                Orthes();
-
-                // Reduce Hessenberg to real Schur form.
-                Hqr2();
-            }
-        }
-
-
-        /// <summary>
-        /// Return the eigenvector matrix.
-        /// </summary>
-        public Matrix V
-        {
-            get
-            {
-                return new Matrix(v);
-            }
-        }
-
-        /// <summary>
-        /// Return the real parts of the eigenvalues.
-        /// </summary>
-        public double[] RealEigenvalues
-        {
-            get
-            {
-                return d;
             }
         }
 
@@ -1134,38 +1133,10 @@ namespace Encog.MathUtil.Matrices.Decomposition
          * 
          * @return imag(diag(D)).
          */
+
         public double[] getImagEigenvalues()
         {
             return e;
-        }
-
-        /// <summary>
-        /// Return the block diagonal eigenvalue matrix
-        /// </summary>
-        public Matrix D
-        {
-            get
-            {
-                Matrix result = new Matrix(n, n);
-                double[][] resultMatrix = result.Data;
-                for (int i = 0; i < n; i++)
-                {
-                    for (int j = 0; j < n; j++)
-                    {
-                        resultMatrix[i][j] = 0.0;
-                    }
-                    resultMatrix[i][i] = d[i];
-                    if (e[i] > 0)
-                    {
-                        resultMatrix[i][i + 1] = e[i];
-                    }
-                    else if (e[i] < 0)
-                    {
-                        resultMatrix[i][i - 1] = e[i];
-                    }
-                }
-                return result;
-            }
         }
     }
 }

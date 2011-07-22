@@ -1,4 +1,27 @@
+//
+// Encog(tm) Core v3.0 - .Net Version
+// http://www.heatonresearch.com/encog/
+//
+// Copyright 2008-2011 Heaton Research, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
 using System;
+
 namespace Encog.MathUtil.LIBSVM
 {
     // This class was taken from the libsvm package.  We have made some
@@ -39,55 +62,55 @@ namespace Encog.MathUtil.LIBSVM
     // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
     // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #if !SILVERLIGHT
-	[Serializable]
+    [Serializable]
 #endif
-	public class svm_parameter 
+    public class svm_parameter
 #if !SILVERLIGHT
-        : System.ICloneable
+        : ICloneable
 #endif
-	{
-		/* svm_type */
-		public const int C_SVC = 0;
-		public const int NU_SVC = 1;
-		public const int ONE_CLASS = 2;
-		public const int EPSILON_SVR = 3;
-		public const int NU_SVR = 4;
-		
-		/* kernel_type */
-		public const int LINEAR = 0;
-		public const int POLY = 1;
-		public const int RBF = 2;
-		public const int SIGMOID = 3;
-		
-		public int svm_type;
-		public int kernel_type;
-		public double degree; // for poly
-		public double gamma; // for poly/rbf/sigmoid
-		public double coef0; // for poly/sigmoid
-		
-		// these are for training only
-		public double cache_size; // in MB
-		public double eps; // stopping criteria
-		public double C; // for C_SVC, EPSILON_SVR and NU_SVR
-		public int nr_weight; // for C_SVC
-		public int[] weight_label; // for C_SVC
-		public double[] weight; // for C_SVC
-		public double nu; // for NU_SVC, ONE_CLASS, and NU_SVR
-		public double p; // for EPSILON_SVR
-		public int shrinking; // use the shrinking heuristics
-		public int probability; // do probability estimates
-		
-		public virtual System.Object Clone()
-		{
-			try
-			{
-				return base.MemberwiseClone();
-			}
-			//UPGRADE_NOTE: Exception 'java.lang.CloneNotSupportedException' was converted to 'System.Exception' which has different behavior. 'ms-help://MS.VSCC.2003/commoner/redir/redirect.htm?keyword="jlca1100_3"'
-			catch (System.Exception)
-			{
-				return null;
-			}
-		}
-	}
+    {
+        /* svm_type */
+        public const int C_SVC = 0;
+        public const int NU_SVC = 1;
+        public const int ONE_CLASS = 2;
+        public const int EPSILON_SVR = 3;
+        public const int NU_SVR = 4;
+
+        /* kernel_type */
+        public const int LINEAR = 0;
+        public const int POLY = 1;
+        public const int RBF = 2;
+        public const int SIGMOID = 3;
+
+        public int svm_type;
+        public int kernel_type;
+        public double degree; // for poly
+        public double gamma; // for poly/rbf/sigmoid
+        public double coef0; // for poly/sigmoid
+
+        // these are for training only
+        public double cache_size; // in MB
+        public double eps; // stopping criteria
+        public double C; // for C_SVC, EPSILON_SVR and NU_SVR
+        public int nr_weight; // for C_SVC
+        public int[] weight_label; // for C_SVC
+        public double[] weight; // for C_SVC
+        public double nu; // for NU_SVC, ONE_CLASS, and NU_SVR
+        public double p; // for EPSILON_SVR
+        public int shrinking; // use the shrinking heuristics
+        public int probability; // do probability estimates
+
+        public virtual Object Clone()
+        {
+            try
+            {
+                return base.MemberwiseClone();
+            }
+                //UPGRADE_NOTE: Exception 'java.lang.CloneNotSupportedException' was converted to 'System.Exception' which has different behavior. 'ms-help://MS.VSCC.2003/commoner/redir/redirect.htm?keyword="jlca1100_3"'
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+    }
 }

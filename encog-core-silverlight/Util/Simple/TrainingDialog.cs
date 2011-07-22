@@ -1,44 +1,30 @@
-// Encog(tm) Artificial Intelligence Framework v2.5
-// .Net Version
+//
+// Encog(tm) Core v3.0 - .Net Version
 // http://www.heatonresearch.com/encog/
-// http://code.google.com/p/encog-java/
-// 
-// Copyright 2008-2010 by Heaton Research Inc.
-// 
-// Released under the LGPL.
 //
-// This is free software; you can redistribute it and/or modify it
-// under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 2.1 of
-// the License, or (at your option) any later version.
+// Copyright 2008-2011 Heaton Research, Inc.
 //
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-// Lesser General Public License for more details.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// You should have received a copy of the GNU Lesser General Public
-// License along with this software; if not, write to the Free
-// Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-// 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-// 
-// Encog and Heaton Research are Trademarks of Heaton Research, Inc.
-// For information on Heaton Research trademarks, visit:
-// 
-// http://www.heatonresearch.com/copyright.html
-
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
 #if !SILVERLIGHT
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Windows.Forms;
-using Encog.Neural.Networks.Training;
 using System.Threading;
-using Encog.Engine.Util;
+using System.Windows.Forms;
+using Encog.ML.Train;
 
 namespace Encog.Util.Simple
 {
@@ -47,6 +33,13 @@ namespace Encog.Util.Simple
     /// </summary>
     public partial class TrainingDialog : Form
     {
+        #region Delegates
+
+        /// <summary>
+        /// Delegate to issue a command, such as close.
+        /// </summary>
+        public delegate void CommandDelegate();
+
         /// <summary>
         /// Delegate to update the stats.
         /// </summary>
@@ -55,10 +48,18 @@ namespace Encog.Util.Simple
         /// <param name="time">Elapsed time.</param>
         public delegate void StatsDelegate(String iterations, String error, String time);
 
+        #endregion
+
         /// <summary>
-        /// Delegate to issue a command, such as close.
+        /// Constructor.
         /// </summary>
-        public delegate void CommandDelegate();
+        public TrainingDialog()
+        {
+            InitializeComponent();
+            var t = new Thread(ThreadProcess);
+            t.IsBackground = true;
+            t.Start();
+        }
 
         /// <summary>
         /// Should training stop.
@@ -68,7 +69,7 @@ namespace Encog.Util.Simple
         /// <summary>
         /// The training alog.
         /// </summary>
-        public ITrain Train { get; set; }
+        public IMLTrain Train { get; set; }
 
         /// <summary>
         /// Called to update the stats.
@@ -79,8 +80,8 @@ namespace Encog.Util.Simple
         public void UpdateStats(String iterations, String error, String time)
         {
             this.iterations.Text = iterations;
-            this.currentError.Text = error;
-            this.trainingTime.Text = time;
+            currentError.Text = error;
+            trainingTime.Text = time;
         }
 
         /// <summary>
@@ -96,25 +97,14 @@ namespace Encog.Util.Simple
         /// </summary>
         public void PerformButtonUpdate()
         {
-            this.button1.Text = "Stopping";
+            button1.Text = "Stopping";
         }
 
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public TrainingDialog()
-        {
-            InitializeComponent();
-            Thread t = new Thread(this.ThreadProcess);
-            t.IsBackground = true;
-            t.Start();
-        }
 
         private void button1_Click(object sender, EventArgs e)
         {
             BeginInvoke(new CommandDelegate(PerformButtonUpdate));
-            this.ShouldStop = true;
+            ShouldStop = true;
         }
 
         private void ThreadProcess()
@@ -130,17 +120,18 @@ namespace Encog.Util.Simple
                 long elapsed = (current - start);
                 elapsed /= 1000;
 
-                Object[] obj = new object[3];
-                obj[0] = "" + Format.FormatInteger( epoch );
-                obj[1] = "" + Format.FormatPercent( Train.Error );
-                obj[2] = "" + Format.FormatTimeSpan( (int)elapsed );
-                this.BeginInvoke(new StatsDelegate(UpdateStats), obj);
+                var obj = new object[3];
+                obj[0] = "" + Format.FormatInteger(epoch);
+                obj[1] = "" + Format.FormatPercent(Train.Error);
+                obj[2] = "" + Format.FormatTimeSpan((int) elapsed);
+                BeginInvoke(new StatsDelegate(UpdateStats), obj);
 
                 epoch++;
-            } while (!this.ShouldStop);
+            } while (!ShouldStop);
 
             BeginInvoke(new CommandDelegate(PerformClose));
         }
     }
 }
+
 #endif

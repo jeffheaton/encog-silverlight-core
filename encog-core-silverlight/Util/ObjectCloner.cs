@@ -1,41 +1,29 @@
-// Encog(tm) Artificial Intelligence Framework v2.5
-// .Net Version
+//
+// Encog(tm) Core v3.0 - .Net Version
 // http://www.heatonresearch.com/encog/
-// http://code.google.com/p/encog-java/
-// 
-// Copyright 2008-2010 by Heaton Research Inc.
-// 
-// Released under the LGPL.
 //
-// This is free software; you can redistribute it and/or modify it
-// under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 2.1 of
-// the License, or (at your option) any later version.
+// Copyright 2008-2011 Heaton Research, Inc.
 //
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-// Lesser General Public License for more details.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// You should have received a copy of the GNU Lesser General Public
-// License along with this software; if not, write to the Free
-// Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-// 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-// 
-// Encog and Heaton Research are Trademarks of Heaton Research, Inc.
-// For information on Heaton Research trademarks, visit:
-// 
-// http://www.heatonresearch.com/copyright.html
-
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.IO;
 #if SILVERLIGHT
 using Encog.Persist;
-using Encog.Parse.Tags.Write;
-using Encog.Parse.Tags.Read;
 #else
 using System.Runtime.Serialization.Formatters.Binary;
 #endif
@@ -54,7 +42,6 @@ namespace Encog.Util
     /// </summary>
     public class ObjectCloner
     {
-
         /// <summary>
         /// Private constructor.
         /// </summary>
@@ -68,78 +55,46 @@ namespace Encog.Util
         /// </summary>
         /// <param name="oldObj">The old object.</param>
         /// <returns>The new object.</returns>
-        static public Object DeepCopy(Object oldObj)
+        public static Object DeepCopy(Object oldObj)
         {
-            BinaryFormatter formatter = new BinaryFormatter();
-            MemoryStream memory = null;
+            var formatter = new BinaryFormatter();
 
-            try
-            {
-                memory = new MemoryStream(); 
-                
-                // serialize and pass the object
-                formatter.Serialize(memory, oldObj);
-                memory.Flush();
-                memory.Position = 0;
-                                
-                // return the new object
-                return formatter.Deserialize(memory);
-            }
-            catch (Exception e)
-            {
-                throw new EncogError(e);
-            }
-            finally
+            using (var memory = new MemoryStream())
             {
                 try
                 {
-                    memory.Close();
+                    // serialize and pass the object
+                    formatter.Serialize(memory, oldObj);
+                    memory.Flush();
+                    memory.Position = 0;
+
+                    // return the new object
+                    return formatter.Deserialize(memory);
                 }
                 catch (Exception e)
                 {
                     throw new EncogError(e);
                 }
-            }
+            }            
         }
 #else
-        /// <summary>
-        /// Perform a deep copy.
-        /// Silverlight version.
-        /// </summary>
-        /// <param name="oldObj">The old object.</param>
-        /// <returns>The new object.</returns>
-        static public IEncogPersistedObject DeepCopy(IEncogPersistedObject oldObj)
-        {
-            bool replacedName = false;
-
-            // encog objects won't save without a name
-            if (oldObj.Name == null)
-            {
-                replacedName = true;
-                oldObj.Name = "temp";
-            }
-
+    /// <summary>
+    /// Perform a deep copy.
+    /// Silverlight version.
+    /// </summary>
+    /// <param name="oldObj">The old object.</param>
+    /// <returns>The new object.</returns>
+        static public Object DeepCopy(Object oldObj)
+        {            
             // now make the copy
             MemoryStream mstream = new MemoryStream();
-            WriteXML xmlOut = new WriteXML(mstream);
-            IPersistor persistor = oldObj.CreatePersistor();
-            xmlOut.BeginDocument();
-            persistor.Save(oldObj, xmlOut);
-            xmlOut.EndDocument();
+            EncogDirectoryPersistence.SaveObject(mstream,oldObj);
             // now read it back
             mstream.Position = 0;
-            ReadXML xmlIn = new ReadXML(mstream);
-            xmlIn.ReadToTag();
-            IEncogPersistedObject result = persistor.Load(xmlIn);
+            Object result = EncogDirectoryPersistence.LoadObject(mstream);
             mstream.Close();
-
-            // put the name back to null if we changed it
-            if (replacedName)
-            {
-                oldObj.Name = null;
-                result.Name = null;
-            }
-            return result;        }
+            return result;        
+        }
 #endif
     }
 }

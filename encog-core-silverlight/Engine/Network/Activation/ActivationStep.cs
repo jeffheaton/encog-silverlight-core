@@ -1,36 +1,29 @@
-/*
- * Encog(tm) Core v2.5 - Java Version
- * http://www.heatonresearch.com/encog/
- * http://code.google.com/p/encog-java/
- 
- * Copyright 2008-2010 Heaton Research, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *   
- * For more information on Heaton Research copyrights, licenses 
- * and trademarks visit:
- * http://www.heatonresearch.com/copyright
- */
+//
+// Encog(tm) Core v3.0 - .Net Version
+// http://www.heatonresearch.com/encog/
+//
+// Copyright 2008-2011 Heaton Research, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
+using System;
 
 namespace Encog.Engine.Network.Activation
 {
-
-    using System;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.ComponentModel;
-    using System.Runtime.CompilerServices;
-
     /// <summary>
     /// The step activation function is a very simple activation function. It is the
     /// activation function that was used by the original perceptron. Using the
@@ -47,30 +40,29 @@ namespace Encog.Engine.Network.Activation
 #endif
     public class ActivationStep : IActivationFunction
     {
-
         /// <summary>
         /// The step center parameter.
         /// </summary>
         ///
-        public const int PARAM_STEP_CENTER = 0;
+        public const int ParamStepCenter = 0;
 
         /// <summary>
         /// The step low parameter.
         /// </summary>
         ///
-        public const int PARAM_STEP_LOW = 1;
+        public const int ParamStepLow = 1;
 
         /// <summary>
         /// The step high parameter.
         /// </summary>
         ///
-        public const int PARAM_STEP_HIGH = 2;
+        public const int ParamStepHigh = 2;
 
         /// <summary>
         /// The parameters.
         /// </summary>
         ///
-        private double[] paras;
+        private readonly double[] _paras;
 
         /// <summary>
         /// Construct a step activation function.
@@ -81,10 +73,10 @@ namespace Encog.Engine.Network.Activation
         /// <param name="high">The high of the function.</param>
         public ActivationStep(double low, double center, double high)
         {
-            this.paras = new double[3];
-            this.paras[ActivationStep.PARAM_STEP_CENTER] = center;
-            this.paras[ActivationStep.PARAM_STEP_LOW] = low;
-            this.paras[ActivationStep.PARAM_STEP_HIGH] = high;
+            _paras = new double[3];
+            _paras[ParamStepCenter] = center;
+            _paras[ParamStepLow] = low;
+            _paras[ParamStepHigh] = high;
         }
 
         /// <summary>
@@ -101,14 +93,8 @@ namespace Encog.Engine.Network.Activation
         /// </summary>
         public double Center
         {
-            get
-            {
-                return this.paras[ActivationStep.PARAM_STEP_CENTER];
-            }
-            set
-            {
-                this.SetParam(ActivationStep.PARAM_STEP_CENTER, value);
-            }
+            get { return _paras[ParamStepCenter]; }
+            set { _paras[ParamStepCenter] = value; }
         }
 
 
@@ -117,14 +103,8 @@ namespace Encog.Engine.Network.Activation
         /// </summary>
         public double Low
         {
-            get
-            {
-                return this.paras[ActivationStep.PARAM_STEP_LOW];
-            }
-            set
-            {
-                this.SetParam(ActivationStep.PARAM_STEP_LOW, value);
-            }
+            get { return _paras[ParamStepLow]; }
+            set { _paras[ParamStepLow] = value; }
         }
 
 
@@ -133,14 +113,8 @@ namespace Encog.Engine.Network.Activation
         /// </summary>
         public double High
         {
-            get
-            {
-                return this.paras[ActivationStep.PARAM_STEP_HIGH];
-            }
-            set
-            {
-                this.SetParam(ActivationStep.PARAM_STEP_HIGH, value);
-            }
+            get { return _paras[ParamStepHigh]; }
+            set { _paras[ParamStepHigh] = value; }
         }
 
         /// <summary>
@@ -149,10 +123,9 @@ namespace Encog.Engine.Network.Activation
         /// <returns>The cloned object.</returns>
         public object Clone()
         {
-            ActivationStep result = new ActivationStep(Low, Center,
-                    High);
+            var result = new ActivationStep(Low, Center,
+                                            High);
             return result;
-
         }
 
         /// <returns>Returns true, this activation function has a derivative.</returns>
@@ -163,23 +136,23 @@ namespace Encog.Engine.Network.Activation
 
         /// <inheritdoc />
         public virtual void ActivationFunction(double[] x, int start,
-                int size)
+                                               int size)
         {
             for (int i = start; i < start + size; i++)
             {
-                if (x[i] >= paras[ActivationStep.PARAM_STEP_CENTER])
+                if (x[i] >= _paras[ParamStepCenter])
                 {
-                    x[i] = paras[ActivationStep.PARAM_STEP_HIGH];
+                    x[i] = _paras[ParamStepHigh];
                 }
                 else
                 {
-                    x[i] = paras[ActivationStep.PARAM_STEP_LOW];
+                    x[i] = _paras[ParamStepLow];
                 }
             }
         }
 
         /// <inheritdoc />
-        public virtual double DerivativeFunction(double d)
+        public virtual double DerivativeFunction(double b, double a)
         {
             return 1.0d;
         }
@@ -189,7 +162,7 @@ namespace Encog.Engine.Network.Activation
         {
             get
             {
-                String[] result = { "center", "low", "high" };
+                String[] result = {"center", "low", "high"};
                 return result;
             }
         }
@@ -197,24 +170,8 @@ namespace Encog.Engine.Network.Activation
 
         /// <inheritdoc />
         public virtual double[] Params
-        {            
-            get
-            {
-                return this.paras;
-            }
-        }
-
-
-        /// <inheritdoc />
-        public virtual void SetParam(int index, double value_ren)
         {
-            this.paras[index] = value_ren;
-        }
-
-        /// <inheritdoc />
-        public virtual String GetOpenCLExpression(bool derivative)
-        {
-            return null;
+            get { return _paras; }
         }
 
     }

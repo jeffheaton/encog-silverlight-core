@@ -1,107 +1,93 @@
-﻿// Encog(tm) Artificial Intelligence Framework v2.5
-// .Net Version
+//
+// Encog(tm) Core v3.0 - .Net Version
 // http://www.heatonresearch.com/encog/
-// http://code.google.com/p/encog-java/
-// 
-// Copyright 2008-2010 by Heaton Research Inc.
-// 
-// Released under the LGPL.
 //
-// This is free software; you can redistribute it and/or modify it
-// under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 2.1 of
-// the License, or (at your option) any later version.
+// Copyright 2008-2011 Heaton Research, Inc.
 //
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-// Lesser General Public License for more details.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// You should have received a copy of the GNU Lesser General Public
-// License along with this software; if not, write to the Free
-// Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-// 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-// 
-// Encog and Heaton Research are Trademarks of Heaton Research, Inc.
-// For information on Heaton Research trademarks, visit:
-// 
-// http://www.heatonresearch.com/copyright.html
-
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Encog.Engine.Network.Flat;
-using Encog.Engine.Util;
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
+using Encog.Neural.Flat;
+using Encog.Util;
 
 namespace Encog.Neural.Networks.Training.Cross
 {
     /// <summary>
     /// The network for one fold of a cross validation.
     /// </summary>
+    ///
     public class NetworkFold
     {
         /// <summary>
-        /// The weights for this fold.
-        /// </summary>
-        private double[] weights;
-
-        /// <summary>
         /// The output for this fold.
         /// </summary>
-        private double[] output;
-        
+        ///
+        private readonly double[] _output;
+
         /// <summary>
-        /// Construct a fold from the specified flat network. 
+        /// The weights for this fold.
         /// </summary>
-        /// <param name="flat">The flat network.</param>
+        ///
+        private readonly double[] _weights;
+
+        /// <summary>
+        /// Construct a fold from the specified flat network.
+        /// </summary>
+        ///
+        /// <param name="flat">THe flat network.</param>
         public NetworkFold(FlatNetwork flat)
         {
-            this.weights = EngineArray.ArrayCopy(flat.Weights);
-            this.output = EngineArray.ArrayCopy(flat.LayerOutput);
+            _weights = EngineArray.ArrayCopy(flat.Weights);
+            _output = EngineArray.ArrayCopy(flat.LayerOutput);
+        }
+
+
+        /// <value>The network weights.</value>
+        public double[] Weights
+        {
+            get { return _weights; }
+        }
+
+
+        /// <value>The network output.</value>
+        public double[] Output
+        {
+            get { return _output; }
         }
 
         /// <summary>
-        /// Copy weights and output to the network. 
+        /// Copy weights and output to the network.
         /// </summary>
+        ///
         /// <param name="target">The network to copy to.</param>
         public void CopyToNetwork(FlatNetwork target)
         {
-            EngineArray.ArrayCopy(this.weights, target.Weights);
-            EngineArray.ArrayCopy(this.output, target.LayerOutput);
+            EngineArray.ArrayCopy(_weights, target.Weights);
+            EngineArray.ArrayCopy(_output, target.LayerOutput);
         }
 
         /// <summary>
-        /// Copy the weights and output from the network. 
+        /// Copy the weights and output from the network.
         /// </summary>
+        ///
         /// <param name="source">The network to copy from.</param>
         public void CopyFromNetwork(FlatNetwork source)
         {
-            EngineArray.ArrayCopy(source.Weights, this.weights);
-            EngineArray.ArrayCopy(source.LayerOutput, this.output);
+            EngineArray.ArrayCopy(source.Weights, _weights);
+            EngineArray.ArrayCopy(source.LayerOutput, _output);
         }
-
-        /// <summary>
-        /// The network weights.
-        /// </summary>
-        public double[] Weights
-        {
-            get
-            {
-                return weights;
-            }
-        }
-
-        /// <summary>
-        /// The network output.
-        /// </summary>
-        public double[] Output
-        {
-            get
-            {
-                return output;
-            }
-        }
-
     }
 }

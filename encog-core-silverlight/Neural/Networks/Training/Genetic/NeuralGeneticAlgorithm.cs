@@ -1,118 +1,59 @@
-// Encog(tm) Artificial Intelligence Framework v2.5
-// .Net Version
+//
+// Encog(tm) Core v3.0 - .Net Version
 // http://www.heatonresearch.com/encog/
-// http://code.google.com/p/encog-java/
-// 
-// Copyright 2008-2010 by Heaton Research Inc.
-// 
-// Released under the LGPL.
 //
-// This is free software; you can redistribute it and/or modify it
-// under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 2.1 of
-// the License, or (at your option) any later version.
+// Copyright 2008-2011 Heaton Research, Inc.
 //
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-// Lesser General Public License for more details.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// You should have received a copy of the GNU Lesser General Public
-// License along with this software; if not, write to the Free
-// Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-// 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-// 
-// Encog and Heaton Research are Trademarks of Heaton Research, Inc.
-// For information on Heaton Research trademarks, visit:
-// 
-// http://www.heatonresearch.com/copyright.html
-
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Encog.Solve.Genetic;
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
 using Encog.MathUtil.Randomize;
-using Encog.Solve.Genetic.Genome;
-using Encog.Solve.Genetic.Population;
-using Encog.Solve.Genetic.Crossover;
-using Encog.Solve.Genetic.Mutate;
-
-#if logging
-using log4net;
-#endif
+using Encog.ML;
+using Encog.ML.Genetic;
+using Encog.ML.Genetic.Crossover;
+using Encog.ML.Genetic.Genome;
+using Encog.ML.Genetic.Mutate;
+using Encog.ML.Genetic.Population;
+using Encog.ML.Train;
+using Encog.Neural.Networks.Training.Propagation;
+using Encog.Util.Logging;
+using Encog.Util.Concurrency;
 
 namespace Encog.Neural.Networks.Training.Genetic
 {
     /// <summary>
-    /// Implements a genetic algorithm that allows a feedforward or simple
-    /// recurrent neural network to be trained using a genetic algorithm. 
-    /// 
-    /// There are essentially two ways you can make use of this
-    /// class.
-    /// 
-    /// Either way, you will need a score object.  The score object tells the
-    /// genetic algorithm how well suited a neural network is.
-    /// 
-    /// If you would like to use genetic algorithms with a training set you 
-    /// should make use TrainingSetScore class.  This score object uses a training
-    /// set to score your neural network.
-    /// 
-    /// If you would like to be more abstract, and not use a training set, you
-    /// can create your own implementation of the CalculateScore method.  This
-    /// class can then score the networks any way that you like.
+    /// Implements a genetic algorithm that allows a feedforward or simple recurrent
+    /// neural network to be trained using a genetic algorithm.
+    /// There are essentially two ways you can make use of this class.
+    /// Either way, you will need a score object. The score object tells the genetic
+    /// algorithm how well suited a neural network is.
+    /// If you would like to use genetic algorithms with a training set you should
+    /// make use TrainingSetScore class. This score object uses a training set to
+    /// score your neural network.
+    /// If you would like to be more abstract, and not use a training set, you can
+    /// create your own implementation of the CalculateScore method. This class can
+    /// then score the networks any way that you like.
     /// </summary>
-    public class NeuralGeneticAlgorithm : BasicTraining
+    ///
+    public class NeuralGeneticAlgorithm : BasicTraining, IMultiThreadable
     {
         /// <summary>
-        /// Very simple class that implements a genetic algorithm.
+        /// Construct a neural genetic algorithm.
         /// </summary>
-        public class NeuralGeneticAlgorithmHelper : GeneticAlgorithm
-        {
-            /// <summary>
-            /// The error from the last iteration.
-            /// </summary>
-            public double Error
-            {
-                get
-                {
-                    IGenome genome = this.Population.GetBest();
-                    return genome.Score;
-                }
-            }
-
-            /// <summary>
-            /// The current best neural network.
-            /// </summary>
-            public BasicNetwork Network
-            {
-                get
-                {
-                    IGenome genome = this.Population.GetBest();
-                    return (BasicNetwork)genome.Organism;
-                }
-            }
-
-        }
-
-#if logging
-        /// <summary>
-        /// The logging object.
-        /// </summary>
-        [NonSerialized]
-        private static readonly ILog logger = LogManager.GetLogger(typeof(NeuralGeneticAlgorithm));
-#endif
-
-
-        /// <summary>
-        /// Simple helper class that implements the required methods to 
-	    /// implement a genetic algorithm.
-        /// </summary>
-        public NeuralGeneticAlgorithmHelper Helper { get; set; }
-
-        /// <summary>
-        /// Construct a neural genetic algorithm. 
-        /// </summary>
+        ///
         /// <param name="network">The network to base this on.</param>
         /// <param name="randomizer">The randomizer used to create this initial population.</param>
         /// <param name="calculateScore">The score calculation object.</param>
@@ -120,62 +61,125 @@ namespace Encog.Neural.Networks.Training.Genetic
         /// <param name="mutationPercent">The percent of offspring to mutate.</param>
         /// <param name="percentToMate">The percent of the population allowed to mate.</param>
         public NeuralGeneticAlgorithm(BasicNetwork network,
-                IRandomizer randomizer,
-                ICalculateScore calculateScore,
-                int populationSize, double mutationPercent,
-                double percentToMate)
+                                      IRandomizer randomizer, ICalculateScore calculateScore,
+                                      int populationSize, double mutationPercent,
+                                      double percentToMate) : base(TrainingImplementationType.Iterative)
         {
-
-            this.Helper = new NeuralGeneticAlgorithmHelper();
-            this.Helper.CalculateScore = new GeneticScoreAdapter(calculateScore);
+            Genetic = new NeuralGeneticAlgorithmHelper
+                           {
+                               CalculateScore = new GeneticScoreAdapter(calculateScore)
+                           };
             IPopulation population = new BasicPopulation(populationSize);
-            Helper.MutationPercent = mutationPercent;
-            Helper.MatingPopulation = (percentToMate * 2);
-            Helper.PercentToMate = (percentToMate);
-            Helper.Crossover = (new Splice(network.Structure.CalculateSize() / 3));
-            Helper.Mutate = (new MutatePerturb(4.0));
-            Helper.Population = (population);
+            Genetic.MutationPercent = mutationPercent;
+            Genetic.MatingPopulation = percentToMate*2;
+            Genetic.PercentToMate = percentToMate;
+            Genetic.Crossover = new Splice(network.Structure.CalculateSize()/3);
+            Genetic.Mutate = new MutatePerturb(4.0d);
+            Genetic.Population = population;
             for (int i = 0; i < population.PopulationSize; i++)
             {
-                BasicNetwork chromosomeNetwork = (BasicNetwork)network
-                        .Clone();
+                var chromosomeNetwork = (BasicNetwork) (network
+                                                           .Clone());
                 randomizer.Randomize(chromosomeNetwork);
 
-                NeuralGenome genome =
-                    new NeuralGenome(this, chromosomeNetwork);
-                Helper.PerformScoreCalculation(genome);
-                Helper.Population.Add(genome);
+                var genome = new NeuralGenome(chromosomeNetwork) {GA = Genetic};
+                Genetic.PerformCalculateScore(genome);
+                Genetic.Population.Add(genome);
             }
             population.Sort();
         }
 
+        /// <inheritdoc />
+        public override sealed bool CanContinue
+        {
+            get { return false; }
+        }
 
         /// <summary>
-        /// The network that is being trained.
+        /// Set the genetic helper class.
         /// </summary>
-        public override BasicNetwork Network
+        public NeuralGeneticAlgorithmHelper Genetic { get; set; }
+
+
+        /// <inheritdoc/>
+        public override IMLMethod Method
         {
-            get
-            {
-                return Helper.Network;
-            }
+            get { return Genetic.Method; }
         }
+
 
         /// <summary>
         /// Perform one training iteration.
         /// </summary>
-        public override void Iteration()
+        ///
+        public override sealed void Iteration()
         {
-#if logging
-            if (logger.IsInfoEnabled)
-            {
-                logger.Info("Performing Genetic iteration.");
-            }
-#endif
+            EncogLogging.Log(EncogLogging.LevelInfo,
+                             "Performing Genetic iteration.");
             PreIteration();
-            Helper.Iteration();
-            Error = Helper.Error;
+            Genetic.Iteration();
+            Error = Genetic.Error;
             PostIteration();
+        }
+
+        /// <inheritdoc/>
+        public override sealed TrainingContinuation Pause()
+        {
+            return null;
+        }
+
+        /// <inheritdoc/>
+        public override sealed void Resume(TrainingContinuation state)
+        {
+        }
+
+     
+
+        #region Nested type: NeuralGeneticAlgorithmHelper
+
+        /// <summary>
+        /// Very simple class that implements a genetic algorithm.
+        /// </summary>
+        ///
+        public class NeuralGeneticAlgorithmHelper : BasicGeneticAlgorithm
+        {
+            /// <value>The error from the last iteration.</value>
+            public double Error
+            {
+                get
+                {
+                    IGenome genome = Population.Best;
+                    return genome.Score;
+                }
+            }
+
+
+            /// <summary>
+            /// Get the current best neural network.
+            /// </summary>
+            public IMLMethod Method
+            {
+                get
+                {
+                    IGenome genome = Population.Best;
+                    return (BasicNetwork) genome.Organism;
+                }
+            }
+        }
+
+        #endregion
+
+        /// <inheritdoc/>
+        public int ThreadCount
+        {
+            get
+            {
+                return this.Genetic.ThreadCount;
+            }
+            set
+            {
+                this.Genetic.ThreadCount = value;
+            }
         }
     }
 }

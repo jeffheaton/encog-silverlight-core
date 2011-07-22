@@ -1,38 +1,27 @@
-// Encog(tm) Artificial Intelligence Framework v2.5
-// .Net Version
+//
+// Encog(tm) Core v3.0 - .Net Version
 // http://www.heatonresearch.com/encog/
-// http://code.google.com/p/encog-java/
-// 
-// Copyright 2008-2010 by Heaton Research Inc.
-// 
-// Released under the LGPL.
 //
-// This is free software; you can redistribute it and/or modify it
-// under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 2.1 of
-// the License, or (at your option) any later version.
+// Copyright 2008-2011 Heaton Research, Inc.
 //
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-// Lesser General Public License for more details.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// You should have received a copy of the GNU Lesser General Public
-// License along with this software; if not, write to the Free
-// Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-// 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-// 
-// Encog and Heaton Research are Trademarks of Heaton Research, Inc.
-// For information on Heaton Research trademarks, visit:
-// 
-// http://www.heatonresearch.com/copyright.html
-
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using Encog.Util;
-using Encog.Engine.Util;
 
 namespace Encog.MathUtil.Matrices.Decomposition
 {
@@ -57,27 +46,27 @@ namespace Encog.MathUtil.Matrices.Decomposition
         /// <summary>
         /// Array for internal storage of decomposition.
         /// </summary>
-        private double[][] LU;
+        private readonly double[][] LU;
 
         /// <summary>
         /// column dimension.
         /// </summary>
-        private int m;
+        private readonly int m;
 
         /// <summary>
         /// row dimension.
         /// </summary>
-        private int n; 
-
-        /// <summary>
-        /// pivot sign.
-        /// </summary>
-        private int pivsign;
+        private readonly int n;
 
         /// <summary>
         /// Internal storage of pivot vector.
         /// </summary>
-        private int[] piv;
+        private readonly int[] piv;
+
+        /// <summary>
+        /// pivot sign.
+        /// </summary>
+        private readonly int pivsign;
 
         /// <summary>
         /// LU Decomposition
@@ -97,13 +86,12 @@ namespace Encog.MathUtil.Matrices.Decomposition
             }
             pivsign = 1;
             double[] LUrowi;
-            double[] LUcolj = new double[m];
+            var LUcolj = new double[m];
 
             // Outer loop.
 
             for (int j = 0; j < n; j++)
             {
-
                 // Make a copy of the j-th column to localize references.
 
                 for (int i = 0; i < m; i++)
@@ -123,7 +111,7 @@ namespace Encog.MathUtil.Matrices.Decomposition
                     double s = 0.0;
                     for (int k = 0; k < kmax; k++)
                     {
-                        s += LUrowi[k] * LUcolj[k];
+                        s += LUrowi[k]*LUcolj[k];
                     }
 
                     LUrowi[j] = LUcolj[i] -= s;
@@ -165,7 +153,7 @@ namespace Encog.MathUtil.Matrices.Decomposition
             }
         }
 
-        
+
         /// <summary>
         /// Is the matrix nonsingular?
         /// </summary>
@@ -189,7 +177,7 @@ namespace Encog.MathUtil.Matrices.Decomposition
         {
             get
             {
-                Matrix x = new Matrix(m, n);
+                var x = new Matrix(m, n);
                 double[][] l = x.Data;
                 for (int i = 0; i < m; i++)
                 {
@@ -223,7 +211,7 @@ namespace Encog.MathUtil.Matrices.Decomposition
         {
             get
             {
-                Matrix x = new Matrix(n, n);
+                var x = new Matrix(n, n);
                 double[][] u = x.Data;
                 for (int i = 0; i < n; i++)
                 {
@@ -250,7 +238,7 @@ namespace Encog.MathUtil.Matrices.Decomposition
         {
             get
             {
-                int[] p = new int[m];
+                var p = new int[m];
                 for (int i = 0; i < m; i++)
                 {
                     p[i] = piv[i];
@@ -266,10 +254,10 @@ namespace Encog.MathUtil.Matrices.Decomposition
         {
             get
             {
-                double[] vals = new double[m];
+                var vals = new double[m];
                 for (int i = 0; i < m; i++)
                 {
-                    vals[i] = (double)piv[i];
+                    vals[i] = piv[i];
                 }
                 return vals;
             }
@@ -285,7 +273,7 @@ namespace Encog.MathUtil.Matrices.Decomposition
             {
                 throw new MatrixError("Matrix must be square.");
             }
-            double d = (double)pivsign;
+            double d = pivsign;
             for (int j = 0; j < n; j++)
             {
                 d *= LU[j][j];
@@ -293,7 +281,7 @@ namespace Encog.MathUtil.Matrices.Decomposition
             return d;
         }
 
-        
+
         /// <summary>
         /// Solve A*X = B
         /// </summary>
@@ -304,9 +292,9 @@ namespace Encog.MathUtil.Matrices.Decomposition
             if (B.Rows != m)
             {
                 throw new MatrixError(
-                        "Matrix row dimensions must agree.");
+                    "Matrix row dimensions must agree.");
             }
-            if (!this.IsNonsingular)
+            if (!IsNonsingular)
             {
                 throw new MatrixError("Matrix is singular.");
             }
@@ -323,7 +311,7 @@ namespace Encog.MathUtil.Matrices.Decomposition
                 {
                     for (int j = 0; j < nx; j++)
                     {
-                        X[i][j] -= X[k][j] * LU[i][k];
+                        X[i][j] -= X[k][j]*LU[i][k];
                     }
                 }
             }
@@ -338,7 +326,7 @@ namespace Encog.MathUtil.Matrices.Decomposition
                 {
                     for (int j = 0; j < nx; j++)
                     {
-                        X[i][j] -= X[k][j] * LU[i][k];
+                        X[i][j] -= X[k][j]*LU[i][k];
                     }
                 }
             }
@@ -348,31 +336,31 @@ namespace Encog.MathUtil.Matrices.Decomposition
         /// <summary>
         /// Solve the matrix for a 1d array.
         /// </summary>
-        /// <param name="value">The value to solve for.</param>
+        /// <param name="value_ren">The value to solve for.</param>
         /// <returns>The solved matrix.</returns>
-        public double[] Solve(double[] value)
+        public double[] Solve(double[] value_ren)
         {
-            if (value == null)
+            if (value_ren == null)
             {
                 throw new MatrixError("value");
             }
 
-            if (value.Length != this.LU.Length)
+            if (value_ren.Length != LU.Length)
             {
                 throw new MatrixError("Invalid matrix dimensions.");
             }
 
-            if (!this.IsNonsingular)
+            if (!IsNonsingular)
             {
                 throw new MatrixError("Matrix is singular");
             }
 
             // Copy right hand side with pivoting
-            int count = value.Length;
-            double[] b = new double[count];
+            int count = value_ren.Length;
+            var b = new double[count];
             for (int i = 0; i < b.Length; i++)
             {
-                b[i] = value[piv[i]];
+                b[i] = value_ren[piv[i]];
             }
 
             int rows = LU[0].Length;
@@ -381,13 +369,13 @@ namespace Encog.MathUtil.Matrices.Decomposition
 
 
             // Solve L*Y = B
-            double[] X = new double[count];
+            var X = new double[count];
             for (int i = 0; i < rows; i++)
             {
                 X[i] = b[i];
                 for (int j = 0; j < i; j++)
                 {
-                    X[i] -= lu[i][j] * X[j];
+                    X[i] -= lu[i][j]*X[j];
                 }
             }
 
@@ -397,26 +385,26 @@ namespace Encog.MathUtil.Matrices.Decomposition
                 // double sum = 0.0;
                 for (int j = columns - 1; j > i; j--)
                 {
-                    X[i] -= lu[i][j] * X[j];
+                    X[i] -= lu[i][j]*X[j];
                 }
                 X[i] /= lu[i][i];
             }
             return X;
         }
 
- 
+
         /// <summary>
         /// Solves a set of equation systems of type <c>A * X = B</c>.
         /// </summary>
         /// <returns>Matrix <c>X</c> so that <c>L * U * X = B</c>.</returns>
         public double[][] Inverse()
         {
-            if (!this.IsNonsingular)
+            if (!IsNonsingular)
             {
                 throw new MatrixError("Matrix is singular");
             }
 
-            int rows = this.LU.Length;
+            int rows = LU.Length;
             int columns = LU[0].Length;
             int count = rows;
             double[][] lu = LU;
@@ -424,7 +412,7 @@ namespace Encog.MathUtil.Matrices.Decomposition
             double[][] X = EngineArray.AllocateDouble2D(rows, columns);
             for (int i = 0; i < rows; i++)
             {
-                int k = this.piv[i];
+                int k = piv[i];
                 X[i][k] = 1.0;
             }
 
@@ -435,7 +423,7 @@ namespace Encog.MathUtil.Matrices.Decomposition
                 {
                     for (int j = 0; j < count; j++)
                     {
-                        X[i][j] -= X[k][j] * lu[i][k];
+                        X[i][j] -= X[k][j]*lu[i][k];
                     }
                 }
             }
@@ -452,13 +440,12 @@ namespace Encog.MathUtil.Matrices.Decomposition
                 {
                     for (int j = 0; j < count; j++)
                     {
-                        X[i][j] -= X[k][j] * lu[i][k];
+                        X[i][j] -= X[k][j]*lu[i][k];
                     }
                 }
             }
 
             return X;
         }
-
     }
 }

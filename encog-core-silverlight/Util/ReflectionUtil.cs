@@ -1,40 +1,31 @@
-// Encog(tm) Artificial Intelligence Framework v2.5
-// .Net Version
+//
+// Encog(tm) Core v3.0 - .Net Version
 // http://www.heatonresearch.com/encog/
-// http://code.google.com/p/encog-java/
-// 
-// Copyright 2008-2010 by Heaton Research Inc.
-// 
-// Released under the LGPL.
 //
-// This is free software; you can redistribute it and/or modify it
-// under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 2.1 of
-// the License, or (at your option) any later version.
+// Copyright 2008-2011 Heaton Research, Inc.
 //
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-// Lesser General Public License for more details.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// You should have received a copy of the GNU Lesser General Public
-// License along with this software; if not, write to the Free
-// Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-// 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-// 
-// Encog and Heaton Research are Trademarks of Heaton Research, Inc.
-// For information on Heaton Research trademarks, visit:
-// 
-// http://www.heatonresearch.com/copyright.html
-
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Reflection;
 using System.IO;
-using Encog.Persist.Location;
-using Encog.Persist.Attributes;
+using System.Linq;
+using System.Reflection;
+using Encog.Util.File;
 
 namespace Encog.Util
 {
@@ -44,9 +35,26 @@ namespace Encog.Util
     public class ReflectionUtil
     {
         /// <summary>
+        /// Path to the activation functions.
+        /// </summary>
+        public const String AfPath = "Encog.Engine.Network.Activation.";
+
+        /// <summary>
+        /// Path to RBF's.
+        /// </summary>
+        public const String RBFPath = "Encog.MathUtil.RBF.";
+
+        /// <summary>
         /// A map between short class names and the full path names.
         /// </summary>
-        private static IDictionary<String, String> classMap = new Dictionary<String, String>();
+        private static readonly IDictionary<String, String> ClassMap = new Dictionary<String, String>();
+
+        /// <summary>
+        /// Private constructor.
+        /// </summary>
+        private ReflectionUtil()
+        {
+        }
 
 
         /// <summary>
@@ -57,15 +65,8 @@ namespace Encog.Util
         /// <returns>The field.</returns>
         public static FieldInfo FindField(Type c, String name)
         {
-            ICollection<FieldInfo> list = ReflectionUtil.GetAllFields(c);
-            foreach (FieldInfo field in list)
-            {
-                if (field.Name.Equals(name))
-                {
-                    return field;
-                }
-            }
-            return null;
+            ICollection<FieldInfo> list = GetAllFields(c);
+            return list.FirstOrDefault(field => field.Name.Equals(name));
         }
 
         /// <summary>
@@ -87,7 +88,8 @@ namespace Encog.Util
         /// <param name="result">A list of fields.</param>
         public static void GetAllFields(Type c, IList<FieldInfo> result)
         {
-            foreach (FieldInfo field in c.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+            foreach (
+                FieldInfo field in c.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
             {
                 result.Add(field);
             }
@@ -97,27 +99,14 @@ namespace Encog.Util
         }
 
         /// <summary>
-        /// Determine if an object is "simple", that is it should be persisted just
-        /// with a .ToString.
-        /// </summary>
-        /// <param name="t">The type object to check.</param>
-        /// <returns>True if the object is simple.</returns>
-        public static bool IsSimple(Type t)
-        {
-            return (t == typeof(File)) || (t == typeof(String)) || (t == typeof(long)) || (t == typeof(int)) || (t == typeof(double)) || (t == typeof(float)) || (t == typeof(short)) || (t == typeof(char) || (t == typeof(bool)));
-        }
-
-        /// <summary>
         /// Load the classmap file. This allows classes to be resolved using just the
         /// simple name.
         /// </summary>
         public static void LoadClassmap()
         {
             {
-                ResourcePersistence resource = new ResourcePersistence(
-                        "Encog.Resources.classes.txt");
-                Stream istream = resource.CreateStream(FileMode.Open);
-                StreamReader sr = new StreamReader(istream);
+                Stream istream = ResourceLoader.CreateStream("Encog.Resources.classes.txt");
+                var sr = new StreamReader(istream);
 
                 String line;
                 while ((line = sr.ReadLine()) != null)
@@ -126,7 +115,7 @@ namespace Encog.Util
                     if (idx != -1)
                     {
                         String simpleName = line.Substring(idx + 1);
-                        ReflectionUtil.classMap[simpleName] = line;
+                        ClassMap[simpleName] = line;
                     }
                 }
                 sr.Close();
@@ -141,15 +130,12 @@ namespace Encog.Util
         /// <returns>The class requested.</returns>
         public static String ResolveEncogClass(String name)
         {
-            if (ReflectionUtil.classMap.Count == 0)
+            if (ClassMap.Count == 0)
             {
-                ReflectionUtil.LoadClassmap();
+                LoadClassmap();
             }
 
-            if (!ReflectionUtil.classMap.ContainsKey(name))
-                return null;
-            else
-                return ReflectionUtil.classMap[name];
+            return !ClassMap.ContainsKey(name) ? null : ClassMap[name];
         }
 
 
@@ -161,43 +147,9 @@ namespace Encog.Util
         /// <returns>True if the field has the specified attribute.</returns>
         public static bool HasAttribute(FieldInfo field, Type t)
         {
-            foreach (Object obj in field.GetCustomAttributes(true))
-            {
-                if (obj.GetType() == t)
-                    return true;
-            }
-            return false;
+            return field.GetCustomAttributes(true).Any(obj => obj.GetType() == t);
         }
 
-        /// <summary>
-        /// Determine if Encog persistence should access the specified field.
-        /// </summary>
-        /// <param name="field">The field to check.</param>
-        /// <param name="isBase">True if this is the actual Encog persisted class(top level)</param>
-        /// <returns>True if the class should be accessed.</returns>
-        public static bool ShouldAccessField(FieldInfo field,
-                 bool isBase)
-        {
-
-            if (HasAttribute(field, typeof(EGIgnore)))
-            {
-                return false;
-            }
-
-            if (!field.IsStatic)
-            {
-                if (isBase)
-                {
-                    if (field.Name.Equals("name")
-                            || field.Name.Equals("description"))
-                    {
-                        return false;
-                    }
-                }
-                return true;
-            }
-            return false;
-        }
 
         /// <summary>
         /// Determine if the specified type contains the specified attribute.
@@ -207,38 +159,20 @@ namespace Encog.Util
         /// <returns>True if the type contains the attribute.</returns>
         public static bool HasAttribute(Type t, Type attribute)
         {
-            foreach (Object obj in t.GetCustomAttributes(true))
-            {
-                if (obj.GetType() == attribute)
-                    return true;
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// Private constructor.
-        /// </summary>
-        private ReflectionUtil()
-        {
-
+            return t.GetCustomAttributes(true).Any(obj => obj.GetType() == attribute);
         }
 
         /// <summary>
         /// Resolve an enumeration.
         /// </summary>
         /// <param name="field">The field to resolve.</param>
-        /// <param name="value">The value to get the enum for.</param>
+        /// <param name="v">The value to get the enum for.</param>
         /// <returns>The enum that was resolved.</returns>
-        public static Object ResolveEnum(FieldInfo field, FieldInfo value)
+        public static Object ResolveEnum(FieldInfo field, FieldInfo v)
         {
             Type type = field.GetType();
             Object[] objs = type.GetMembers(BindingFlags.Public | BindingFlags.Static);
-            foreach (MemberInfo obj in objs)
-            {
-                if (obj.Name.Equals(value))
-                    return obj;
-            }
-            return null;
+            return objs.Cast<MemberInfo>().FirstOrDefault(obj => obj.Name.Equals(v));
         }
 
         /// <summary>

@@ -1,64 +1,48 @@
-// Encog(tm) Artificial Intelligence Framework v2.5
-// .Net Version
+//
+// Encog(tm) Core v3.0 - .Net Version
 // http://www.heatonresearch.com/encog/
-// http://code.google.com/p/encog-java/
-// 
-// Copyright 2008-2010 by Heaton Research Inc.
-// 
-// Released under the LGPL.
 //
-// This is free software; you can redistribute it and/or modify it
-// under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 2.1 of
-// the License, or (at your option) any later version.
+// Copyright 2008-2011 Heaton Research, Inc.
 //
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-// Lesser General Public License for more details.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// You should have received a copy of the GNU Lesser General Public
-// License along with this software; if not, write to the Free
-// Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-// 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-// 
-// Encog and Heaton Research are Trademarks of Heaton Research, Inc.
-// For information on Heaton Research trademarks, visit:
-// 
-// http://www.heatonresearch.com/copyright.html
-
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace Encog.Util.Time
 {
-    class TimeSpanUtil
+    internal class TimeSpanUtil
     {
-        private DateTime from;
-        private DateTime to;
+        private DateTime _from;
+        private DateTime _to;
 
         public TimeSpanUtil(DateTime from, DateTime to)
         {
-            this.from = from;
-            this.to = to;
+            _from = from;
+            _to = to;
         }
 
         public DateTime From
         {
-            get
-            {
-                return this.from;
-            }
+            get { return _from; }
         }
 
         public DateTime To
         {
-            get
-            {
-                return this.to;
-            }
+            get { return _to; }
         }
 
 
@@ -66,76 +50,95 @@ namespace Encog.Util.Time
         {
             switch (unit)
             {
-                case TimeUnit.SECONDS: return GetSpanSeconds();
-                case TimeUnit.MINUTES: return GetSpanMinutes();
-                case TimeUnit.HOURS: return GetSpanHours();
-                case TimeUnit.DAYS: return GetSpanDays();
-                case TimeUnit.WEEKS: return GetSpanWeeks();
-                case TimeUnit.FORTNIGHTS: return GetSpanFortnights();
-                case TimeUnit.MONTHS: return GetSpanMonths();
-                case TimeUnit.YEARS: return GetSpanYears();
-                case TimeUnit.SCORES: return GetSpanScores();
-                case TimeUnit.CENTURIES: return GetSpanCenturies();
-                case TimeUnit.MILLENNIA: return GetSpanMillennia();
-                default: return 0;
+                case TimeUnit.Ticks:
+                    return GetSpanTicks();
+                case TimeUnit.Seconds:
+                    return GetSpanSeconds();
+                case TimeUnit.Minutes:
+                    return GetSpanMinutes();
+                case TimeUnit.Hours:
+                    return GetSpanHours();
+                case TimeUnit.Days:
+                    return GetSpanDays();
+                case TimeUnit.Weeks:
+                    return GetSpanWeeks();
+                case TimeUnit.Fortnights:
+                    return GetSpanFortnights();
+                case TimeUnit.Months:
+                    return GetSpanMonths();
+                case TimeUnit.Years:
+                    return GetSpanYears();
+                case TimeUnit.Scores:
+                    return GetSpanScores();
+                case TimeUnit.Centuries:
+                    return GetSpanCenturies();
+                case TimeUnit.Millennia:
+                    return GetSpanMillennia();
+                default:
+                    return 0;
             }
+        }
 
+        private long GetSpanTicks()
+        {
+            TimeSpan span = _to.Subtract(_from);
+            return span.Ticks;
         }
 
         private long GetSpanSeconds()
         {
-            TimeSpan span = this.to.Subtract(this.from);
+            TimeSpan span = _to.Subtract(_from);
             return span.Ticks/TimeSpan.TicksPerSecond;
         }
 
         private long GetSpanMinutes()
         {
-            return GetSpanSeconds() / 60;
+            return GetSpanSeconds()/60;
         }
 
         private long GetSpanHours()
         {
-            return GetSpanMinutes() / 60;
+            return GetSpanMinutes()/60;
         }
 
         private long GetSpanDays()
         {
-            return GetSpanHours() / 24;
+            return GetSpanHours()/24;
         }
 
         private long GetSpanWeeks()
         {
-            return GetSpanDays() / 7;
+            return GetSpanDays()/7;
         }
 
         private long GetSpanFortnights()
         {
-            return GetSpanWeeks() / 2;
+            return GetSpanWeeks()/2;
         }
 
         private long GetSpanMonths()
         {
-            return (to.Month - from.Month) + (to.Year - from.Year) * 12;
+            return (_to.Month - _from.Month) + (_to.Year - _from.Year)*12;
         }
 
         private long GetSpanYears()
         {
-            return GetSpanMonths() / 12;
+            return GetSpanMonths()/12;
         }
 
         private long GetSpanScores()
         {
-            return GetSpanYears() / 20;
+            return GetSpanYears()/20;
         }
 
         private long GetSpanCenturies()
         {
-            return GetSpanYears() / 100;
+            return GetSpanYears()/100;
         }
 
         private long GetSpanMillennia()
         {
-            return GetSpanYears() / 1000;
+            return GetSpanYears()/1000;
         }
     }
 }

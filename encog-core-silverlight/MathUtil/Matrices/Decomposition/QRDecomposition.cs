@@ -1,37 +1,25 @@
-// Encog(tm) Artificial Intelligence Framework v2.5
-// .Net Version
+//
+// Encog(tm) Core v3.0 - .Net Version
 // http://www.heatonresearch.com/encog/
-// http://code.google.com/p/encog-java/
-// 
-// Copyright 2008-2010 by Heaton Research Inc.
-// 
-// Released under the LGPL.
 //
-// This is free software; you can redistribute it and/or modify it
-// under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 2.1 of
-// the License, or (at your option) any later version.
+// Copyright 2008-2011 Heaton Research, Inc.
 //
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-// Lesser General Public License for more details.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// You should have received a copy of the GNU Lesser General Public
-// License along with this software; if not, write to the Free
-// Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-// 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-// 
-// Encog and Heaton Research are Trademarks of Heaton Research, Inc.
-// For information on Heaton Research trademarks, visit:
-// 
-// http://www.heatonresearch.com/copyright.html
-
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
 namespace Encog.MathUtil.Matrices.Decomposition
 {
     /// <summary>
@@ -53,22 +41,22 @@ namespace Encog.MathUtil.Matrices.Decomposition
         /// <summary>
         /// Array for internal storage of decomposition.
         /// </summary>
-        private double[][] QR;
-
-        /// <summary>
-        /// Row dimension.
-        /// </summary>
-        private int m;
-
-        /// <summary>
-        /// Column dimension.
-        /// </summary>
-        private int n;
+        private readonly double[][] QR;
 
         /// <summary>
         /// Array for internal storage of diagonal of R.
         /// </summary>
-        private double[] Rdiag;
+        private readonly double[] Rdiag;
+
+        /// <summary>
+        /// Row dimension.
+        /// </summary>
+        private readonly int m;
+
+        /// <summary>
+        /// Column dimension.
+        /// </summary>
+        private readonly int n;
 
         /// <summary>
         /// QR Decomposition, computed by Householder reflections.
@@ -111,31 +99,17 @@ namespace Encog.MathUtil.Matrices.Decomposition
                         double s = 0.0;
                         for (int i = k; i < m; i++)
                         {
-                            s += QR[i][k] * QR[i][j];
+                            s += QR[i][k]*QR[i][j];
                         }
-                        s = -s / QR[k][k];
+                        s = -s/QR[k][k];
                         for (int i = k; i < m; i++)
                         {
-                            QR[i][j] += s * QR[i][k];
+                            QR[i][j] += s*QR[i][k];
                         }
                     }
                 }
                 Rdiag[k] = -nrm;
             }
-        }
-
-        /// <summary>
-        /// Is the matrix full rank? 
-        /// </summary>
-        /// <returns>true if R, and hence A, has full rank.</returns>
-        public bool IsFullRank()
-        {
-            for (int j = 0; j < n; j++)
-            {
-                if (Rdiag[j] == 0)
-                    return false;
-            }
-            return true;
         }
 
         /// <summary>
@@ -145,7 +119,7 @@ namespace Encog.MathUtil.Matrices.Decomposition
         {
             get
             {
-                Matrix x = new Matrix(m, n);
+                var x = new Matrix(m, n);
                 double[][] h = x.Data;
                 for (int i = 0; i < m; i++)
                 {
@@ -175,7 +149,7 @@ namespace Encog.MathUtil.Matrices.Decomposition
         {
             get
             {
-                Matrix x = new Matrix(n, n);
+                var x = new Matrix(n, n);
                 double[][] r = x.Data;
                 for (int i = 0; i < n; i++)
                 {
@@ -206,7 +180,7 @@ namespace Encog.MathUtil.Matrices.Decomposition
         {
             get
             {
-                Matrix x = new Matrix(m, n);
+                var x = new Matrix(m, n);
                 double[][] q = x.Data;
                 for (int k = n - 1; k >= 0; k--)
                 {
@@ -222,18 +196,32 @@ namespace Encog.MathUtil.Matrices.Decomposition
                             double s = 0.0;
                             for (int i = k; i < m; i++)
                             {
-                                s += QR[i][k] * q[i][j];
+                                s += QR[i][k]*q[i][j];
                             }
-                            s = -s / QR[k][k];
+                            s = -s/QR[k][k];
                             for (int i = k; i < m; i++)
                             {
-                                q[i][j] += s * QR[i][k];
+                                q[i][j] += s*QR[i][k];
                             }
                         }
                     }
                 }
                 return x;
             }
+        }
+
+        /// <summary>
+        /// Is the matrix full rank? 
+        /// </summary>
+        /// <returns>true if R, and hence A, has full rank.</returns>
+        public bool IsFullRank()
+        {
+            for (int j = 0; j < n; j++)
+            {
+                if (Rdiag[j] == 0)
+                    return false;
+            }
+            return true;
         }
 
         /// <summary>
@@ -246,9 +234,9 @@ namespace Encog.MathUtil.Matrices.Decomposition
             if (B.Rows != m)
             {
                 throw new MatrixError(
-                        "Matrix row dimensions must agree.");
+                    "Matrix row dimensions must agree.");
             }
-            if (!this.IsFullRank() )
+            if (!IsFullRank())
             {
                 throw new MatrixError("Matrix is rank deficient.");
             }
@@ -265,12 +253,12 @@ namespace Encog.MathUtil.Matrices.Decomposition
                     double s = 0.0;
                     for (int i = k; i < m; i++)
                     {
-                        s += QR[i][k] * X[i][j];
+                        s += QR[i][k]*X[i][j];
                     }
-                    s = -s / QR[k][k];
+                    s = -s/QR[k][k];
                     for (int i = k; i < m; i++)
                     {
-                        X[i][j] += s * QR[i][k];
+                        X[i][j] += s*QR[i][k];
                     }
                 }
             }
@@ -285,7 +273,7 @@ namespace Encog.MathUtil.Matrices.Decomposition
                 {
                     for (int j = 0; j < nx; j++)
                     {
-                        X[i][j] -= X[k][j] * QR[i][k];
+                        X[i][j] -= X[k][j]*QR[i][k];
                     }
                 }
             }

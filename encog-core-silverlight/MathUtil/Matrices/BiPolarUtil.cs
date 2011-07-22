@@ -1,38 +1,27 @@
-// Encog(tm) Artificial Intelligence Framework v2.5
-// .Net Version
+//
+// Encog(tm) Core v3.0 - .Net Version
 // http://www.heatonresearch.com/encog/
-// http://code.google.com/p/encog-java/
-// 
-// Copyright 2008-2010 by Heaton Research Inc.
-// 
-// Released under the LGPL.
 //
-// This is free software; you can redistribute it and/or modify it
-// under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 2.1 of
-// the License, or (at your option) any later version.
+// Copyright 2008-2011 Heaton Research, Inc.
 //
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-// Lesser General Public License for more details.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// You should have received a copy of the GNU Lesser General Public
-// License along with this software; if not, write to the Free
-// Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-// 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-// 
-// Encog and Heaton Research are Trademarks of Heaton Research, Inc.
-// For information on Heaton Research trademarks, visit:
-// 
-// http://www.heatonresearch.com/copyright.html
-
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
 #if logging
-using log4net;
+
 #endif
 
 namespace Encog.MathUtil.Matrices
@@ -69,7 +58,7 @@ namespace Encog.MathUtil.Matrices
         /// <returns></returns>
         public static double[] Bipolar2double(bool[] b)
         {
-            double[] result = new double[b.Length];
+            var result = new double[b.Length];
 
             for (int i = 0; i < b.Length; i++)
             {
@@ -86,7 +75,7 @@ namespace Encog.MathUtil.Matrices
         /// <returns>A bipolar array.</returns>
         public static double[][] Bipolar2double(bool[][] b)
         {
-            double[][] result = new double[b.Length][];
+            var result = new double[b.Length][];
 
             for (int row = 0; row < b.Length; row++)
             {
@@ -124,7 +113,7 @@ namespace Encog.MathUtil.Matrices
         /// <returns>A boolean array.</returns>
         public static bool[] Double2bipolar(double[] d)
         {
-            bool[] result = new bool[d.Length];
+            var result = new bool[d.Length];
 
             for (int i = 0; i < d.Length; i++)
             {
@@ -141,14 +130,14 @@ namespace Encog.MathUtil.Matrices
         /// <returns>A 2D boolean array.</returns>
         public static bool[][] Double2bipolar(double[][] d)
         {
-            bool[][] result = new bool[d.Length] [];
+            var result = new bool[d.Length][];
 
             for (int row = 0; row < d.Length; row++)
             {
                 result[row] = new bool[d[row].Length];
                 for (int col = 0; col < d[row].Length; col++)
                 {
-                    result[row][col] = Double2bipolar(d[row][ col]);
+                    result[row][col] = Double2bipolar(d[row][col]);
                 }
             }
 
@@ -179,7 +168,7 @@ namespace Encog.MathUtil.Matrices
         /// <returns>A binary number.</returns>
         public static double ToBinary(double d)
         {
-            return (d + 1) / 2.0;
+            return (d + 1)/2.0;
         }
 
         /// <summary>
@@ -189,7 +178,7 @@ namespace Encog.MathUtil.Matrices
         /// <returns></returns>
         public static double ToBiPolar(double d)
         {
-            return (2 * NormalizeBinary(d)) - 1;
+            return (2*NormalizeBinary(d)) - 1;
         }
 
         /// <summary>
@@ -202,5 +191,4 @@ namespace Encog.MathUtil.Matrices
             return NormalizeBinary(ToBinary(d));
         }
     }
-
 }

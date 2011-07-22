@@ -1,43 +1,34 @@
-// Encog(tm) Artificial Intelligence Framework v2.5
-// .Net Version
+//
+// Encog(tm) Core v3.0 - .Net Version
 // http://www.heatonresearch.com/encog/
-// http://code.google.com/p/encog-java/
-// 
-// Copyright 2008-2010 by Heaton Research Inc.
-// 
-// Released under the LGPL.
 //
-// This is free software; you can redistribute it and/or modify it
-// under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 2.1 of
-// the License, or (at your option) any later version.
+// Copyright 2008-2011 Heaton Research, Inc.
 //
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-// Lesser General Public License for more details.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// You should have received a copy of the GNU Lesser General Public
-// License along with this software; if not, write to the Free
-// Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-// 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-// 
-// Encog and Heaton Research are Trademarks of Heaton Research, Inc.
-// For information on Heaton Research trademarks, visit:
-// 
-// http://www.heatonresearch.com/copyright.html
-
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
 #if !SILVERLIGHT
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Net;
 using System.IO;
+using System.Net;
+using System.Text;
 using System.Threading;
-using System.Web;
-using Encog.Parse.Tags.Read;
 using Encog.Parse.Tags;
+using Encog.Parse.Tags.Read;
 using Encog.Util.HTTP;
 
 namespace Encog.Util
@@ -54,16 +45,15 @@ namespace Encog.Util
         /// <returns>The search results.</returns>
         private ICollection<Uri> DoSearch(Uri url)
         {
-
             ICollection<Uri> result = new List<Uri>();
             // submit the search
-            WebRequest http = HttpWebRequest.Create(url);
-            HttpWebResponse response = (HttpWebResponse)http.GetResponse();
+            WebRequest http = WebRequest.Create(url);
+            var response = (HttpWebResponse) http.GetResponse();
 
             using (Stream istream = response.GetResponseStream())
             {
-                ReadHTML parse = new ReadHTML(istream);
-                StringBuilder buffer = new StringBuilder();
+                var parse = new ReadHTML(istream);
+                var buffer = new StringBuilder();
                 bool capture = false;
 
                 // parse the results
@@ -89,7 +79,7 @@ namespace Encog.Util
                     {
                         if (capture)
                         {
-                            buffer.Append((char)ch);
+                            buffer.Append((char) ch);
                         }
                     }
                 }
@@ -110,21 +100,21 @@ namespace Encog.Util
             ICollection<Uri> result = null;
 
             // build the Uri
-            MemoryStream mstream = new MemoryStream();
-            FormUtility form = new FormUtility(mstream, null);
+            var mstream = new MemoryStream();
+            var form = new FormUtility(mstream, null);
             form.Add("appid", "YahooDemo");
             form.Add("results", "100");
             form.Add("query", searchFor);
             form.Complete();
 
-            System.Text.ASCIIEncoding enc = new System.Text.ASCIIEncoding();
+            var enc = new ASCIIEncoding();
 
             String str = enc.GetString(mstream.GetBuffer());
             mstream.Dispose();
 
-            Uri Uri = new Uri(
-                   "http://search.yahooapis.com/WebSearchService/V1/webSearch?"
-                           + str);
+            var uri = new Uri(
+                "http://search.yahooapis.com/WebSearchService/V1/webSearch?"
+                + str);
 
             int tries = 0;
             bool done = false;
@@ -132,17 +122,16 @@ namespace Encog.Util
             {
                 try
                 {
-                    result = DoSearch(Uri);
+                    result = DoSearch(uri);
                     done = true;
                 }
                 catch (IOException e)
                 {
                     if (tries == 5)
                     {
-                        throw (e);
+                        throw;
                     }
                     Thread.Sleep(5000);
-
                 }
                 tries++;
             }
@@ -151,4 +140,5 @@ namespace Encog.Util
         }
     }
 }
+
 #endif

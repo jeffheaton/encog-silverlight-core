@@ -1,40 +1,30 @@
-// Encog(tm) Artificial Intelligence Framework v2.5
-// .Net Version
+//
+// Encog(tm) Core v3.0 - .Net Version
 // http://www.heatonresearch.com/encog/
-// http://code.google.com/p/encog-java/
-// 
-// Copyright 2008-2010 by Heaton Research Inc.
-// 
-// Released under the LGPL.
 //
-// This is free software; you can redistribute it and/or modify it
-// under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 2.1 of
-// the License, or (at your option) any later version.
+// Copyright 2008-2011 Heaton Research, Inc.
 //
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-// Lesser General Public License for more details.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// You should have received a copy of the GNU Lesser General Public
-// License along with this software; if not, write to the Free
-// Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-// 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-// 
-// Encog and Heaton Research are Trademarks of Heaton Research, Inc.
-// For information on Heaton Research trademarks, visit:
-// 
-// http://www.heatonresearch.com/copyright.html
-
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Encog.Neural.Data;
 #if logging
-using log4net;
+
 #endif
+
 namespace Encog.MathUtil.Matrices
 {
     /// <summary>
@@ -43,6 +33,13 @@ namespace Encog.MathUtil.Matrices
     /// </summary>
     public class MatrixMath
     {
+        /// <summary>
+        /// Private constructor.  All methods are static.
+        /// </summary>
+        private MatrixMath()
+        {
+        }
+
         /// <summary>
         /// Add two matrixes together, producing a third.
         /// </summary>
@@ -54,22 +51,22 @@ namespace Encog.MathUtil.Matrices
             if (a.Rows != b.Rows)
             {
                 throw new MatrixError(
-                        "To add the matrixes they must have the same number of rows and columns.  Matrix a has "
-                                + a.Rows
-                                + " rows and matrix b has "
-                                + b.Rows + " rows.");
+                    "To add the matrixes they must have the same number of rows and columns.  Matrix a has "
+                    + a.Rows
+                    + " rows and matrix b has "
+                    + b.Rows + " rows.");
             }
 
             if (a.Cols != b.Cols)
             {
                 throw new MatrixError(
-                        "To add the matrixes they must have the same number of rows and columns.  Matrix a has "
-                                + a.Cols
-                                + " cols and matrix b has "
-                                + b.Cols + " cols.");
+                    "To add the matrixes they must have the same number of rows and columns.  Matrix a has "
+                    + a.Cols
+                    + " cols and matrix b has "
+                    + b.Cols + " cols.");
             }
 
-            double[][] result = new double[a.Rows][];
+            var result = new double[a.Rows][];
             double[][] aData = a.Data;
             double[][] bData = b.Data;
 
@@ -79,7 +76,7 @@ namespace Encog.MathUtil.Matrices
                 for (int resultCol = 0; resultCol < a.Cols; resultCol++)
                 {
                     result[resultRow][resultCol] = aData[resultRow][resultCol]
-                            + bData[resultRow][resultCol];
+                                                   + bData[resultRow][resultCol];
                 }
             }
 
@@ -103,7 +100,6 @@ namespace Encog.MathUtil.Matrices
                     targetData[row][col] = sourceData[row][col];
                 }
             }
-
         }
 
         /// <summary>
@@ -117,10 +113,10 @@ namespace Encog.MathUtil.Matrices
             if (deleted >= matrix.Cols)
             {
                 throw new MatrixError("Can't delete column " + deleted
-                        + " from matrix, it only has " + matrix.Cols
-                        + " columns.");
+                                      + " from matrix, it only has " + matrix.Cols
+                                      + " columns.");
             }
-            double[][] newMatrix = new double[matrix.Rows][];
+            var newMatrix = new double[matrix.Rows][];
             double[][] matrixData = matrix.Data;
 
             for (int row = 0; row < matrix.Rows; row++)
@@ -136,9 +132,7 @@ namespace Encog.MathUtil.Matrices
                         newMatrix[row][targetCol] = matrixData[row][col];
                         targetCol++;
                     }
-
                 }
-
             }
             return new Matrix(newMatrix);
         }
@@ -154,10 +148,10 @@ namespace Encog.MathUtil.Matrices
             if (deleted >= matrix.Rows)
             {
                 throw new MatrixError("Can't delete row " + deleted
-                        + " from matrix, it only has " + matrix.Rows
-                        + " rows.");
+                                      + " from matrix, it only has " + matrix.Rows
+                                      + " rows.");
             }
-            double[][] newMatrix = new double[matrix.Rows-1][];
+            var newMatrix = new double[matrix.Rows - 1][];
             double[][] matrixData = matrix.Data;
 
             int targetRow = 0;
@@ -184,14 +178,14 @@ namespace Encog.MathUtil.Matrices
         /// <returns>The divided matrix.</returns>
         public static Matrix Divide(Matrix a, double b)
         {
-            double[][] result = new double[a.Rows][];
+            var result = new double[a.Rows][];
             double[][] aData = a.Data;
             for (int row = 0; row < a.Rows; row++)
             {
                 result[row] = new double[a.Cols];
                 for (int col = 0; col < a.Cols; col++)
                 {
-                    result[row][col] = aData[row][col] / b;
+                    result[row][col] = aData[row][col]/b;
                 }
             }
             return new Matrix(result);
@@ -208,7 +202,7 @@ namespace Encog.MathUtil.Matrices
             if (!a.IsVector() || !b.IsVector())
             {
                 throw new MatrixError(
-                        "To take the dot product, both matrixes must be vectors.");
+                    "To take the dot product, both matrixes must be vectors.");
             }
 
             Double[] aArray = a.ToPackedArray();
@@ -217,7 +211,7 @@ namespace Encog.MathUtil.Matrices
             if (aArray.Length != bArray.Length)
             {
                 throw new MatrixError(
-                        "To take the dot product, both matrixes must be of the same length.");
+                    "To take the dot product, both matrixes must be of the same length.");
             }
 
             double result = 0;
@@ -225,7 +219,7 @@ namespace Encog.MathUtil.Matrices
 
             for (int i = 0; i < length; i++)
             {
-                result += aArray[i] * bArray[i];
+                result += aArray[i]*bArray[i];
             }
 
             return result;
@@ -243,7 +237,7 @@ namespace Encog.MathUtil.Matrices
                 throw new MatrixError("Identity matrix must be at least of size 1.");
             }
 
-            Matrix result = new Matrix(size, size);
+            var result = new Matrix(size, size);
             double[][] resultData = result.Data;
 
             for (int i = 0; i < size; i++)
@@ -262,7 +256,7 @@ namespace Encog.MathUtil.Matrices
         /// <returns>The new multiplied matrix.</returns>
         public static Matrix Multiply(Matrix a, double b)
         {
-            double[][] result = new double[a.Rows][];
+            var result = new double[a.Rows][];
             double[][] aData = a.Data;
 
             for (int row = 0; row < a.Rows; row++)
@@ -270,7 +264,7 @@ namespace Encog.MathUtil.Matrices
                 result[row] = new double[a.Cols];
                 for (int col = 0; col < a.Cols; col++)
                 {
-                    result[row][col] = aData[row][col] * b;
+                    result[row][col] = aData[row][col]*b;
                 }
             }
             return new Matrix(result);
@@ -287,10 +281,10 @@ namespace Encog.MathUtil.Matrices
             if (a.Cols != b.Rows)
             {
                 throw new MatrixError(
-                        "To use ordinary matrix multiplication the number of columns on the first matrix must mat the number of rows on the second.");
+                    "To use ordinary matrix multiplication the number of columns on the first matrix must mat the number of rows on the second.");
             }
 
-            double[][] result = new double[a.Rows][];
+            var result = new double[a.Rows][];
             double[][] aData = a.Data;
             double[][] bData = b.Data;
 
@@ -303,8 +297,7 @@ namespace Encog.MathUtil.Matrices
 
                     for (int i = 0; i < a.Cols; i++)
                     {
-
-                        value += aData[resultRow][i] * bData[i][resultCol];
+                        value += aData[resultRow][i]*bData[i][resultCol];
                     }
                     result[resultRow][resultCol] = value;
                 }
@@ -324,22 +317,22 @@ namespace Encog.MathUtil.Matrices
             if (a.Rows != b.Rows)
             {
                 throw new MatrixError(
-                        "To subtract the matrixes they must have the same number of rows and columns.  Matrix a has "
-                                + a.Rows
-                                + " rows and matrix b has "
-                                + b.Rows + " rows.");
+                    "To subtract the matrixes they must have the same number of rows and columns.  Matrix a has "
+                    + a.Rows
+                    + " rows and matrix b has "
+                    + b.Rows + " rows.");
             }
 
             if (a.Cols != b.Cols)
             {
                 throw new MatrixError(
-                        "To subtract the matrixes they must have the same number of rows and columns.  Matrix a has "
-                                + a.Cols
-                                + " cols and matrix b has "
-                                + b.Cols + " cols.");
+                    "To subtract the matrixes they must have the same number of rows and columns.  Matrix a has "
+                    + a.Cols
+                    + " cols and matrix b has "
+                    + b.Cols + " cols.");
             }
 
-            double[][] result = new double[a.Rows][];
+            var result = new double[a.Rows][];
             double[][] aData = a.Data;
             double[][] bData = b.Data;
 
@@ -349,7 +342,7 @@ namespace Encog.MathUtil.Matrices
                 for (int resultCol = 0; resultCol < a.Cols; resultCol++)
                 {
                     result[resultRow][resultCol] = aData[resultRow][resultCol]
-                            - bData[resultRow][resultCol];
+                                                   - bData[resultRow][resultCol];
                 }
             }
 
@@ -363,7 +356,7 @@ namespace Encog.MathUtil.Matrices
         /// <returns>The transposed matrix.</returns>
         public static Matrix Transpose(Matrix input)
         {
-            double[][] inverseMatrix = new double[input.Cols][];
+            var inverseMatrix = new double[input.Cols][];
             double[][] inputData = input.Data;
 
             for (int r = 0; r < input.Cols; r++)
@@ -388,7 +381,7 @@ namespace Encog.MathUtil.Matrices
             if (!input.IsVector())
             {
                 throw new MatrixError(
-                        "Can only take the vector length of a vector.");
+                    "Can only take the vector length of a vector.");
             }
             Double[] v = input.ToPackedArray();
             double rtn = 0.0;
@@ -398,14 +391,5 @@ namespace Encog.MathUtil.Matrices
             }
             return Math.Sqrt(rtn);
         }
-
-
-        /// <summary>
-        /// Private constructor.  All methods are static.
-        /// </summary>
-        private MatrixMath()
-        {
-        }
-
     }
 }

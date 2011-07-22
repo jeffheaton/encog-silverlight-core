@@ -1,44 +1,31 @@
-// Encog(tm) Artificial Intelligence Framework v2.5
-// .Net Version
+//
+// Encog(tm) Core v3.0 - .Net Version
 // http://www.heatonresearch.com/encog/
-// http://code.google.com/p/encog-java/
-// 
-// Copyright 2008-2010 by Heaton Research Inc.
-// 
-// Released under the LGPL.
 //
-// This is free software; you can redistribute it and/or modify it
-// under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 2.1 of
-// the License, or (at your option) any later version.
+// Copyright 2008-2011 Heaton Research, Inc.
 //
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-// Lesser General Public License for more details.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// You should have received a copy of the GNU Lesser General Public
-// License along with this software; if not, write to the Free
-// Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-// 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-// 
-// Encog and Heaton Research are Trademarks of Heaton Research, Inc.
-// For information on Heaton Research trademarks, visit:
-// 
-// http://www.heatonresearch.com/copyright.html
-
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Encog.Neural.Networks;
-using Encog.Neural.NeuralData;
-using Encog.Neural.Networks.Training;
-using Encog.Neural.Networks.Training.Propagation.Resilient;
-using Encog.Engine.Opencl;
-using Encog.Engine.Network.Train.Prop;
-using Encog.Util.Simple;
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
 using System.Diagnostics;
+using Encog.ML.Data;
+using Encog.ML.Train;
+using Encog.Neural.Networks;
+using Encog.Neural.Networks.Training.Propagation.Resilient;
+using Encog.Util.Simple;
 using Encog.Util.Time;
 
 namespace Encog.Util.Banchmark
@@ -51,10 +38,10 @@ namespace Encog.Util.Banchmark
         /// <summary>
         /// Mili-seconds in a second.
         /// </summary>
-        public const int MILIS = 1000;
+        public const int Milis = 1000;
 
         /// <summary>
-        /// Evaluate training, use CPU.
+        /// Evaluate training.
         /// </summary>
         /// <param name="input">Input neurons.</param>
         /// <param name="hidden1">Hidden 1 neurons.</param>
@@ -62,36 +49,14 @@ namespace Encog.Util.Banchmark
         /// <param name="output">Output neurons.</param>
         /// <returns>The result of the evaluation.</returns>
         public static int EvaluateTrain(int input, int hidden1, int hidden2,
-                int output)
-        {
-            return EvaluateTrain(null, input, hidden1, hidden2, output);
-        }
-
-        /// <summary>
-        /// Evaluate training, use OpenCL.
-        /// </summary>
-        /// <param name="device">The OpenCL device, null for CPU.</param>
-        /// <param name="input">Input neurons.</param>
-        /// <param name="hidden1">Hidden 1 neurons.</param>
-        /// <param name="hidden2">Hidden 2 neurons.</param>
-        /// <param name="output">Output neurons.</param>
-        /// <returns>The result of the evaluation.</returns>
-        public static int EvaluateTrain(EncogCLDevice device, int input, int hidden1, int hidden2,
-                int output)
+                                        int output)
         {
             BasicNetwork network = EncogUtility.SimpleFeedForward(input,
-                    hidden1, hidden2, output, true);
-            INeuralDataSet training = RandomTrainingFactory.Generate(1000,
-                    10000, input, output, -1, 1);
+                                                                  hidden1, hidden2, output, true);
+            IMLDataSet training = RandomTrainingFactory.Generate(1000,
+                                                                10000, input, output, -1, 1);
 
-            OpenCLTrainingProfile profile = null;
-
-#if !SILVERLIGHT
-            if (device != null)
-                profile = new OpenCLTrainingProfile(device);
-#endif
-
-            return EvaluateTrain(profile, network, training);
+            return EvaluateTrain(network, training);
         }
 
 
@@ -100,34 +65,18 @@ namespace Encog.Util.Banchmark
         /// causes each of the training pairs to be run through the network. The
         /// network is evaluated 10 times and the lowest time is reported. 
         /// </summary>
-        /// <param name="profile">The network to evaluate with.</param>
         /// <param name="network">The training data to use.</param>
         /// <param name="training">The number of seconds that it took.</param>
         /// <returns></returns>
-        public static int EvaluateTrain(OpenCLTrainingProfile profile,
-                BasicNetwork network, INeuralDataSet training)
+        public static int EvaluateTrain(BasicNetwork network, IMLDataSet training)
         {
             // train the neural network
-            ITrain train;
-
-            if (profile == null)
-            {
-                train = new ResilientPropagation(network, training);
-            }
-            else
-            {
-                train = new ResilientPropagation(
-                        network,
-                        training,
-                        profile,
-                        RPROPConst.DEFAULT_INITIAL_UPDATE,
-                        RPROPConst.DEFAULT_MAX_STEP);
-            }
+            IMLTrain train = new ResilientPropagation(network, training);
 
             int iterations = 0;
-            Stopwatch watch = new Stopwatch();
+            var watch = new Stopwatch();
             watch.Start();
-            while (watch.ElapsedMilliseconds < (10 * MILIS))
+            while (watch.ElapsedMilliseconds < (10*Milis))
             {
                 iterations++;
                 train.Iteration();
@@ -135,6 +84,5 @@ namespace Encog.Util.Banchmark
 
             return iterations;
         }
-
     }
 }

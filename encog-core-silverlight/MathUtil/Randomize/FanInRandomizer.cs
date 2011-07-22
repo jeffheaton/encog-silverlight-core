@@ -1,163 +1,129 @@
-// Encog(tm) Artificial Intelligence Framework v2.5
-// .Net Version
+//
+// Encog(tm) Core v3.0 - .Net Version
 // http://www.heatonresearch.com/encog/
-// http://code.google.com/p/encog-java/
-// 
-// Copyright 2008-2010 by Heaton Research Inc.
-// 
-// Released under the LGPL.
 //
-// This is free software; you can redistribute it and/or modify it
-// under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 2.1 of
-// the License, or (at your option) any later version.
+// Copyright 2008-2011 Heaton Research, Inc.
 //
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-// Lesser General Public License for more details.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// You should have received a copy of the GNU Lesser General Public
-// License along with this software; if not, write to the Free
-// Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-// 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-// 
-// Encog and Heaton Research are Trademarks of Heaton Research, Inc.
-// For information on Heaton Research trademarks, visit:
-// 
-// http://www.heatonresearch.com/copyright.html
-
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Encog.Neural.Networks;
-using Encog.Neural.Networks.Synapse;
-using Encog.Neural.Networks.Layers;
-using Encog.MathUtil;
 using Encog.MathUtil.Matrices;
+using Encog.MathUtil.Randomize;
+using Encog.Neural.Networks;
 
-#if logging
-using log4net;
-#endif
-namespace Encog.MathUtil.Randomize
+namespace Encog.Mathutil.Randomize
 {
     /// <summary>
     /// A randomizer that attempts to create starting weight values that are
-    /// conducive to back propagation training.
-    ///
+    /// conducive to propagation training.
+    /// This is one of the best randomizers offered in Encog, however, the Nguyen
+    /// Widrow method generally performs better.
     /// From:
-    ///  
     /// Neural Networks - A Comprehensive Foundation, Haykin, chapter 6.7
     /// </summary>
+    ///
     public class FanInRandomizer : BasicRandomizer
     {
-
         /// <summary>
         /// Error message. Can't use fan-in on a single number.
         /// </summary>
-        static String ERROR = "To use FanInRandomizer you must "
-                + "present a Matrix or 2D array type value.";
-
-        /// <summary>
-        /// The lower bound.
-        /// </summary>
-        private double lowerBound;
-
-        /// <summary>
-        /// The upper bound. 
-        /// </summary>
-        private double upperBound;
+        ///
+        internal const String Error = "To use FanInRandomizer you must "
+                                      + "present a Matrix or 2D array type value.";
 
         /// <summary>
         /// The default boundary.
         /// </summary>
-        private static double DEFAULT_BOUNDARY = 2.4;
+        ///
+        private const double DefaultBoundary = 2.4d;
+
+        /// <summary>
+        /// The lower bound. 
+        /// </summary>
+        ///
+        private readonly double _lowerBound;
 
         /// <summary>
         /// Should the square root of the number of rows be used?
         /// </summary>
-        private bool sqrt;
+        ///
+        private readonly bool _sqrt;
 
-#if logging
         /// <summary>
-        /// The logging object.
+        /// The upper bound. 
         /// </summary>
-        private readonly ILog logger = LogManager.GetLogger(typeof(FanInRandomizer));
-#endif
+        ///
+        private readonly double _upperBound;
 
         /// <summary>
         /// Create a fan-in randomizer with default values.
         /// </summary>
-        public FanInRandomizer()
-            : this(-DEFAULT_BOUNDARY, DEFAULT_BOUNDARY, false)
+        ///
+        public FanInRandomizer() : this(-DefaultBoundary, DefaultBoundary, false)
         {
-
         }
 
         /// <summary>
         /// Construct a fan-in randomizer along the specified boundary. The min will
         /// be -boundary and the max will be boundary.
         /// </summary>
+        ///
         /// <param name="boundary">The boundary for the fan-in.</param>
-        /// <param name="sqrt">Should the square root of the rows to be used in the
-        /// calculation.</param>
-        public FanInRandomizer(double boundary, bool sqrt)
-            : this(-boundary, boundary, sqrt)
+        /// <param name="sqrt"></param>
+        public FanInRandomizer(double boundary, bool sqrt) : this(-boundary, boundary, sqrt)
         {
-
         }
-
 
         /// <summary>
         /// Construct a fan-in randomizer. Use the specified bounds.
         /// </summary>
+        ///
         /// <param name="aLowerBound">The lower bound.</param>
         /// <param name="anUpperBound">The upper bound.</param>
-        /// <param name="sqrt">True if the square root of the rows should be used in the
-        /// calculation.</param>
+        /// <param name="sqrt"></param>
         public FanInRandomizer(double aLowerBound, double anUpperBound,
-                 bool sqrt)
+                               bool sqrt)
         {
-            this.lowerBound = aLowerBound;
-            this.upperBound = anUpperBound;
-            this.sqrt = sqrt;
+            _lowerBound = aLowerBound;
+            _upperBound = anUpperBound;
+            _sqrt = sqrt;
         }
 
         /// <summary>
         /// Calculate the fan-in value.
         /// </summary>
+        ///
         /// <param name="rows">The number of rows.</param>
         /// <returns>The fan-in value.</returns>
         private double CalculateValue(int rows)
         {
-            double rowValue;
+            double rowValue = _sqrt ? Math.Sqrt(rows) : rows;
 
-            if (this.sqrt)
-            {
-                rowValue = Math.Sqrt(rows);
-            }
-            else
-            {
-                rowValue = rows;
-            }
-
-            return (this.lowerBound / rowValue) + this.RandomGenerator.NextDouble()
-                    * ((this.upperBound - this.lowerBound) / rowValue);
+            return (_lowerBound/rowValue) + NextDouble()
+                   *((_upperBound - _lowerBound)/rowValue);
         }
 
         /// <summary>
         /// Throw an error if this class is used improperly.
         /// </summary>
-        private void CauseError()
+        ///
+        private static void CauseError()
         {
-#if logging
-            if (this.logger.IsErrorEnabled)
-            {
-                this.logger.Error(FanInRandomizer.ERROR);
-            }
-#endif
-            throw new EncogError(FanInRandomizer.ERROR);
+            throw new EncogError(Error);
         }
 
         /// <summary>
@@ -165,6 +131,7 @@ namespace Encog.MathUtil.Randomize
         /// by this randomizer. This could be a totally new random number, or it
         /// could be based on the specified number.
         /// </summary>
+        ///
         /// <param name="d">The number to randomize.</param>
         /// <returns>A randomized number.</returns>
         public override double Randomize(double d)
@@ -177,6 +144,7 @@ namespace Encog.MathUtil.Randomize
         /// Randomize the array based on an array, modify the array. Previous values
         /// may be used, or they may be discarded, depending on the randomizer.
         /// </summary>
+        ///
         /// <param name="d">An array to randomize.</param>
         public override void Randomize(double[] d)
         {
@@ -187,18 +155,19 @@ namespace Encog.MathUtil.Randomize
         }
 
         /// <summary>
-        /// Randomize the 2d array based on an array, modify the array. Previous 
-        /// values may be used, or they may be discarded, depending on 
-        /// the randomizer.
+        /// Randomize the 2d array based on an array, modify the array. Previous
+        /// values may be used, or they may be discarded, depending on the
+        /// randomizer.
         /// </summary>
+        ///
         /// <param name="d">An array to randomize.</param>
         public override void Randomize(double[][] d)
         {
-            for (int row = 0; row < d.Length; row++)
+            foreach (double[] t in d)
             {
-                for (int col = 0; col < d[0].Length; col++)
+                for (var col = 0; col < d[0].Length; col++)
                 {
-                    d[row][col] = CalculateValue(d.Length);
+                    t[col] = CalculateValue(d.Length);
                 }
             }
         }
@@ -207,6 +176,7 @@ namespace Encog.MathUtil.Randomize
         /// Randomize the matrix based on an array, modify the array. Previous values
         /// may be used, or they may be discarded, depending on the randomizer.
         /// </summary>
+        ///
         /// <param name="m">A matrix to randomize.</param>
         public override void Randomize(Matrix m)
         {
@@ -220,25 +190,23 @@ namespace Encog.MathUtil.Randomize
         }
 
         /// <summary>
-        /// Randomize a synapse, only randomize those connections that are actually connected.
+        /// Randomize one level of a neural network.
         /// </summary>
-        /// <param name="network">The network the synapse belongs to.</param>
-        /// <param name="synapse">The synapse to randomize.</param>
-        public override void Randomize(BasicNetwork network, ISynapse synapse)
+        ///
+        /// <param name="network">The network to randomize</param>
+        /// <param name="fromLayer">The from level to randomize.</param>
+        public override void Randomize(BasicNetwork network, int fromLayer)
         {
-            if (synapse.WeightMatrix != null)
-            {
-                bool limited = network.Structure.IsConnectionLimited;
-                double[][] d = synapse.WeightMatrix.Data;
-                for (int fromNeuron = 0; fromNeuron < synapse.WeightMatrix.Rows; fromNeuron++)
-                {
-                    for (int toNeuron = 0; toNeuron < synapse.WeightMatrix.Cols; toNeuron++)
-                    {
-                        if (!limited || network.IsConnected(synapse, fromNeuron, toNeuron))
-                            d[fromNeuron][toNeuron] = CalculateValue(synapse.WeightMatrix.Rows);
-                    }
-                }
+            int fromCount = network.GetLayerTotalNeuronCount(fromLayer);
+            int toCount = network.GetLayerNeuronCount(fromLayer + 1);
 
+            for (int fromNeuron = 0; fromNeuron < fromCount; fromNeuron++)
+            {
+                for (int toNeuron = 0; toNeuron < toCount; toNeuron++)
+                {
+                    double v = CalculateValue(toCount);
+                    network.SetWeight(fromLayer, fromNeuron, toNeuron, v);
+                }
             }
         }
     }

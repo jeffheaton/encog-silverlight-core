@@ -1,36 +1,26 @@
-// Encog(tm) Artificial Intelligence Framework v2.5
-// .Net Version
+//
+// Encog(tm) Core v3.0 - .Net Version
 // http://www.heatonresearch.com/encog/
-// http://code.google.com/p/encog-java/
-// 
-// Copyright 2008-2010 by Heaton Research Inc.
-// 
-// Released under the LGPL.
 //
-// This is free software; you can redistribute it and/or modify it
-// under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 2.1 of
-// the License, or (at your option) any later version.
+// Copyright 2008-2011 Heaton Research, Inc.
 //
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-// Lesser General Public License for more details.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// You should have received a copy of the GNU Lesser General Public
-// License along with this software; if not, write to the Free
-// Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-// 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-// 
-// Encog and Heaton Research are Trademarks of Heaton Research, Inc.
-// For information on Heaton Research trademarks, visit:
-// 
-// http://www.heatonresearch.com/copyright.html
-
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace Encog.MathUtil
 {
@@ -39,12 +29,20 @@ namespace Encog.MathUtil
     /// class is provided the number of groups, as well as the range that the
     /// activations should fall into.
     /// </summary>
+#if !SILVERLIGHT
+    [Serializable]
+#endif
     public class Equilateral
     {
         /// <summary>
+        /// Minimum number of classes for equilateral.
+        /// </summary>
+        public const int MinEq = 3;
+
+        /// <summary>
         /// The matrix of values that was generated.
         /// </summary>
-        private double[][] matrix;
+        private readonly double[][] _matrix;
 
         /// <summary>
         /// Construct an equilateral matrix.
@@ -54,7 +52,7 @@ namespace Encog.MathUtil
         /// <param name="low">The low value for the outputs.</param>
         public Equilateral(int count, double high, double low)
         {
-            this.matrix = Equilat(count, high, low);
+            _matrix = Equilat(count, high, low);
         }
 
 
@@ -69,7 +67,7 @@ namespace Encog.MathUtil
             double minValue = double.PositiveInfinity;
             int minSet = -1;
 
-            for (int i = 0; i < this.matrix.GetLength(0); i++)
+            for (int i = 0; i < _matrix.GetLength(0); i++)
             {
                 double dist = GetDistance(activations, i);
                 if (dist < minValue)
@@ -88,7 +86,7 @@ namespace Encog.MathUtil
         /// <returns>The activations for the specified sets.</returns>
         public double[] Encode(int set)
         {
-            return this.matrix[set];
+            return _matrix[set];
         }
 
         /// <summary>
@@ -98,12 +96,10 @@ namespace Encog.MathUtil
         /// <param name="high">The high end of the range of values to generate.</param>
         /// <param name="low"> The low end of the range of values to generate.</param>
         /// <returns>One row for each set, the columns are the activations for that set.</returns>
-        private double[][] Equilat(int n,
-                 double high, double low)
+        private static double[][] Equilat(int n,
+                                   double high, double low)
         {
-            double r, f;
-
-            double[][] result = new double[n][];// n - 1
+            var result = new double[n][]; // n - 1
             for (int i = 0; i < n; i++)
             {
                 result[i] = new double[n - 1];
@@ -115,8 +111,8 @@ namespace Encog.MathUtil
             for (int k = 2; k < n; k++)
             {
                 // scale the matrix so far
-                r = k;
-                f = Math.Sqrt(r * r - 1.0) / r;
+                double r = k;
+                double f = Math.Sqrt(r*r - 1.0)/r;
                 for (int i = 0; i < k; i++)
                 {
                     for (int j = 0; j < k - 1; j++)
@@ -125,7 +121,7 @@ namespace Encog.MathUtil
                     }
                 }
 
-                r = -1.0 / r;
+                r = -1.0/r;
                 for (int i = 0; i < k; i++)
                 {
                     result[i][k - 1] = r;
@@ -143,10 +139,10 @@ namespace Encog.MathUtil
             {
                 for (int col = 0; col < result[0].GetLength(0); col++)
                 {
-                    double min = -1;
-                    double max = 1;
-                    result[row][col] = ((result[row][col] - min) / (max - min))
-                            * (high - low) + low;
+                    const double min = -1;
+                    const double max = 1;
+                    result[row][col] = ((result[row][col] - min)/(max - min))
+                                       *(high - low) + low;
                 }
             }
 
@@ -164,9 +160,32 @@ namespace Encog.MathUtil
             double result = 0;
             for (int i = 0; i < data.GetLength(0); i++)
             {
-                result += Math.Pow(data[i] - this.matrix[set][i], 2);
+                result += Math.Pow(data[i] - _matrix[set][i], 2);
             }
             return Math.Sqrt(result);
+        }
+
+        /// <summary>
+        /// Get the smallest distance.
+        /// </summary>
+        /// <param name="data">The data to check.</param>
+        /// <returns>The set with the smallest distance.</returns>
+        public int GetSmallestDistance(double[] data)
+        {
+            int bestSet = -1;
+            double bestDistance = double.MaxValue;
+
+            for (int i = 0; i < _matrix.Length; i++)
+            {
+                double d = GetDistance(data, i);
+                if (bestSet == -1 || d < bestDistance)
+                {
+                    bestSet = i;
+                    bestDistance = d;
+                }
+            }
+
+            return bestSet;
         }
     }
 }

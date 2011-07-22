@@ -1,35 +1,27 @@
-// Encog(tm) Artificial Intelligence Framework v2.5
-// .Net Version
+//
+// Encog(tm) Core v3.0 - .Net Version
 // http://www.heatonresearch.com/encog/
-// http://code.google.com/p/encog-java/
-// 
-// Copyright 2008-2010 by Heaton Research Inc.
-// 
-// Released under the LGPL.
 //
-// This is free software; you can redistribute it and/or modify it
-// under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 2.1 of
-// the License, or (at your option) any later version.
+// Copyright 2008-2011 Heaton Research, Inc.
 //
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-// Lesser General Public License for more details.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// You should have received a copy of the GNU Lesser General Public
-// License along with this software; if not, write to the Free
-// Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-// 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-// 
-// Encog and Heaton Research are Trademarks of Heaton Research, Inc.
-// For information on Heaton Research trademarks, visit:
-// 
-// http://www.heatonresearch.com/copyright.html
-
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using Encog.Bot.DataUnits;
 
@@ -43,41 +35,15 @@ namespace Encog.Bot.Browse.Range
     /// </summary>
     public class DocumentRange
     {
-
         /// <summary>
-        /// The beginning index for this range.
+        /// Sub elements of this range.
         /// </summary>
-        private int begin;
-
-        /// <summary>
-        /// The ending index for this range.
-        /// </summary>
-        private int end;
+        private readonly IList<DocumentRange> _elements = new List<DocumentRange>();
 
         /// <summary>
         /// The source page for this range.
         /// </summary>
-        private WebPage source;
-
-        /// <summary>
-        /// The id attribute, on the source tag.  Useful for DIV tags.
-        /// </summary>
-        private String idAttribute;
-
-        /// <summary>
-        /// The class attribute. on the source tag.
-        /// </summary>
-        private String classAttribute;
-
-        /// <summary>
-        /// Sub elements of this range.
-        /// </summary>
-        private IList<DocumentRange> elements = new List<DocumentRange>();
-
-        /// <summary>
-        /// The parent to this range, or null if top.
-        /// </summary>
-        private DocumentRange parent;
+        private WebPage _source;
 
         /// <summary>
         /// Construct a document range from the specified WebPage.
@@ -85,7 +51,49 @@ namespace Encog.Bot.Browse.Range
         /// <param name="source">The web page that this range belongs to.</param>
         public DocumentRange(WebPage source)
         {
-            this.source = source;
+            _source = source;
+        }
+
+        /// <summary>
+        /// The beginning of this attribute.
+        /// </summary>
+        public int Begin { get; set; }
+
+        /// <summary>
+        /// The HTML class attribiute for this element.
+        /// </summary>
+        public String ClassAttribute { get; set; }
+
+        /// <summary>
+        /// The elements of this document range. 
+        /// </summary>
+        public IList<DocumentRange> Elements
+        {
+            get { return _elements; }
+        }
+
+        /// <summary>
+        /// The ending index.
+        /// </summary>
+        public int End { get; set; }
+
+        /// <summary>
+        /// The HTML id for this element.
+        /// </summary>
+        public String IdAttribute { get; set; }
+
+        /// <summary>
+        /// The web page that owns this class.
+        /// </summary>
+        public DocumentRange Parent { get; set; }
+
+        /// <summary>
+        /// The web page that this range is owned by.
+        /// </summary>
+        public WebPage Source
+        {
+            get { return _source; }
+            set { _source = value; }
         }
 
         /// <summary>
@@ -94,109 +102,8 @@ namespace Encog.Bot.Browse.Range
         /// <param name="element">The element to add.</param>
         public void AddElement(DocumentRange element)
         {
-            this.Elements.Add(element);
+            Elements.Add(element);
             element.Parent = this;
-        }
-
-        /// <summary>
-        /// The beginning of this attribute.
-        /// </summary>
-        public int Begin
-        {
-            get
-            {
-                return this.begin;
-            }
-            set
-            {
-                this.begin = value;
-            }
-        }
-
-        /// <summary>
-        /// The HTML class attribiute for this element.
-        /// </summary>
-        public String ClassAttribute
-        {
-            get
-            {
-                return this.classAttribute;
-            }
-            set
-            {
-                this.classAttribute = value;
-            }
-        }
-
-        /// <summary>
-        /// The elements of this document range. 
-        /// </summary>
-        public IList<DocumentRange> Elements
-        {
-            get
-            {
-                return this.elements;
-            }
-        }
-
-        /// <summary>
-        /// The ending index.
-        /// </summary>
-        public int End
-        {
-            get
-            {
-                return this.end;
-            }
-            set
-            {
-                this.end = value;
-            }
-        }
-
-        /// <summary>
-        /// The HTML id for this element.
-        /// </summary>
-        public String IdAttribute
-        {
-            get
-            {
-                return this.idAttribute;
-            }
-            set
-            {
-                this.idAttribute = value;
-            }
-        }
-
-        /// <summary>
-        /// The web page that owns this class.
-        /// </summary>
-        public DocumentRange Parent
-        {
-            get
-            {
-                return this.parent;
-            }
-            set
-            {
-                this.parent = value;
-            }
-        }
-
-        /// <summary>
-        /// The web page that this range is owned by.
-        /// </summary>
-        public WebPage Source
-        {
-            get
-            {
-                return this.source;
-            }
-            set
-            {
-                this.source = value;
-            }
         }
 
         /// <summary>
@@ -205,11 +112,11 @@ namespace Encog.Bot.Browse.Range
         /// <returns>The text from this range.</returns>
         public String GetTextOnly()
         {
-            StringBuilder result = new StringBuilder();
+            var result = new StringBuilder();
 
-            for (int i = this.Begin; i < this.End; i++)
+            for (int i = Begin; i < End; i++)
             {
-                DataUnit du = this.source.Data[i];
+                DataUnit du = _source.Data[i];
                 if (du is TextDataUnit)
                 {
                     result.Append(du.ToString());
@@ -229,7 +136,5 @@ namespace Encog.Bot.Browse.Range
         {
             return GetTextOnly();
         }
-
     }
-
 }

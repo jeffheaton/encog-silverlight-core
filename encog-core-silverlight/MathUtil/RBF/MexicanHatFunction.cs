@@ -1,7 +1,26 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+//
+// Encog(tm) Core v3.0 - .Net Version
+// http://www.heatonresearch.com/encog/
+//
+// Copyright 2008-2011 Heaton Research, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
+using System;
 
 namespace Encog.MathUtil.RBF
 {
@@ -26,11 +45,11 @@ namespace Encog.MathUtil.RBF
         /// <param name="dimensions"></param>
         public MexicanHatFunction(int dimensions)
         {
-            this.Centers = new double[dimensions];
-            this.Peak = 1.0;
-            this.Width = 1.0;
+            Centers = new double[dimensions];
+            Peak = 1.0;
+            Width = 1.0;
         }
-        
+
         /// <summary>
         /// Construct a multi-dimension Mexican hat function with the specified peak,
         /// centers and widths. 
@@ -39,11 +58,11 @@ namespace Encog.MathUtil.RBF
         /// <param name="center">The centers for each dimension.</param>
         /// <param name="width">The widths for each dimension.</param>
         public MexicanHatFunction(double peak, double[] center,
-                double width)
+                                  double width)
         {
-            this.Centers = center;
-            this.Peak = peak;
-            this.Width = width;
+            Centers = center;
+            Peak = peak;
+            Width = width;
         }
 
 
@@ -55,12 +74,12 @@ namespace Encog.MathUtil.RBF
         /// <param name="peak">The centers for each dimension.</param>
         /// <param name="width">The widths for each dimension.</param>
         public MexicanHatFunction(double center, double peak,
-                double width)
+                                  double width)
         {
-            this.Centers = new double[1];
-            this.Centers[0] = center;
-            this.Peak = peak;
-            this.Width = width;
+            Centers = new double[1];
+            Centers[0] = center;
+            Peak = peak;
+            Width = width;
         }
 
 
@@ -71,7 +90,6 @@ namespace Encog.MathUtil.RBF
         /// <returns>Output value.</returns>
         public override double Calculate(double[] x)
         {
-
             double[] center = Centers;
 
             // calculate the "norm", but don't take square root
@@ -84,8 +102,7 @@ namespace Encog.MathUtil.RBF
 
             // calculate the value
 
-            return this.Peak * (1 - norm) * Math.Exp(-norm / 2);
+            return Peak*(1 - norm)*Math.Exp(-norm/2);
         }
-
     }
 }

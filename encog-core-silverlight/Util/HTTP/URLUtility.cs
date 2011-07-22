@@ -1,36 +1,29 @@
-// Encog(tm) Artificial Intelligence Framework v2.5
-// .Net Version
+//
+// Encog(tm) Core v3.0 - .Net Version
 // http://www.heatonresearch.com/encog/
-// http://code.google.com/p/encog-java/
-// 
-// Copyright 2008-2010 by Heaton Research Inc.
-// 
-// Released under the LGPL.
 //
-// This is free software; you can redistribute it and/or modify it
-// under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 2.1 of
-// the License, or (at your option) any later version.
+// Copyright 2008-2011 Heaton Research, Inc.
 //
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-// Lesser General Public License for more details.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// You should have received a copy of the GNU Lesser General Public
-// License along with this software; if not, write to the Free
-// Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-// 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-// 
-// Encog and Heaton Research are Trademarks of Heaton Research, Inc.
-// For information on Heaton Research trademarks, visit:
-// 
-// http://www.heatonresearch.com/copyright.html
-
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
 #if !SILVERLIGHT
 using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace Encog.Util.HTTP
@@ -44,7 +37,7 @@ namespace Encog.Util.HTTP
         /// <summary>
         /// The name of an HTML index file.
         /// </summary>
-        public const String indexFile = "index.html";
+        public const String IndexFile = "index.html";
 
         /// <summary>
         /// Construct a URL from a string.
@@ -55,7 +48,7 @@ namespace Encog.Util.HTTP
         /// <returns>The constructed URL.</returns>
         public static Uri ConstructURL(Uri baseURL, String url, bool stripFragment)
         {
-            Uri result = new Uri(baseURL, url);
+            var result = new Uri(baseURL, url);
             String file = result.PathAndQuery;
             String protocol = result.Scheme;
             String host = result.Host;
@@ -64,7 +57,7 @@ namespace Encog.Util.HTTP
 
             file = file.Replace(" ", "%20");
 
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
             sb.Append(protocol);
             sb.Append("://");
             sb.Append(host);
@@ -84,8 +77,7 @@ namespace Encog.Util.HTTP
             sb.Append(file);
 
 
-
-            if ((fragment != null) && !stripFragment)
+            if (!stripFragment)
             {
                 sb.Append('#');
                 sb.Append(fragment);
@@ -101,15 +93,7 @@ namespace Encog.Util.HTTP
         /// <returns>True if the URL contains invalid characters.</returns>
         public static bool ContainsInvalidURLCharacters(String url)
         {
-            for (int i = 0; i < url.Length; i++)
-            {
-                char ch = url[i];
-                if (ch > 255)
-                {
-                    return true;
-                }
-            }
-            return false;
+            return url.Any(ch => ch > 255);
         }
 
         /// <summary>
@@ -138,7 +122,7 @@ namespace Encog.Util.HTTP
                 lastSegment--;
             String filename = url.Segments[lastSegment];
             if (filename.Equals('/'))
-                filename = indexFile;
+                filename = IndexFile;
 
             for (int i = 0; i < lastSegment; i++)
             {
@@ -158,11 +142,11 @@ namespace Encog.Util.HTTP
                 result = Path.Combine(result, dir);
                 if (mkdir)
                     Directory.CreateDirectory(result);
-                filename = indexFile;
+                filename = IndexFile;
             }
             else if (filename.IndexOf('.') == -1)
             {
-                filename = "/" + indexFile;
+                filename = "/" + IndexFile;
             }
 
 
@@ -171,7 +155,7 @@ namespace Encog.Util.HTTP
             result = result.Replace('?', '_');
             return result;
         }
-
     }
 }
+
 #endif

@@ -1,43 +1,35 @@
-// Encog(tm) Artificial Intelligence Framework v2.5
-// .Net Version
+//
+// Encog(tm) Core v3.0 - .Net Version
 // http://www.heatonresearch.com/encog/
-// http://code.google.com/p/encog-java/
-// 
-// Copyright 2008-2010 by Heaton Research Inc.
-// 
-// Released under the LGPL.
 //
-// This is free software; you can redistribute it and/or modify it
-// under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 2.1 of
-// the License, or (at your option) any later version.
+// Copyright 2008-2011 Heaton Research, Inc.
 //
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-// Lesser General Public License for more details.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// You should have received a copy of the GNU Lesser General Public
-// License along with this software; if not, write to the Free
-// Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-// 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-// 
-// Encog and Heaton Research are Trademarks of Heaton Research, Inc.
-// For information on Heaton Research trademarks, visit:
-// 
-// http://www.heatonresearch.com/copyright.html
-
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.IO;
-using Encog.Persist;
 using System.Globalization;
+using System.IO;
+using System.Text;
 
 #if logging
-using log4net;
+
 #endif
+
 namespace Encog.Util.CSV
 {
     /// <summary>
@@ -45,70 +37,32 @@ namespace Encog.Util.CSV
     /// </summary>
     public class ReadCSV
     {
-
         /// <summary>
-        /// The format that dates are expected to be in.
+        /// The names of the columns.
         /// </summary>
-        public const String dateFormat = "yyyy-MM-dd";
-
-        private CSVFormat format;
-
-        /// <summary>
-        /// Format a date/time object to the same format that we parse in.
-        /// </summary>
-        /// <param name="date">The date to format.</param>
-        /// <returns>A formatted date and time.</returns>
-        public static String DisplayDate(DateTime date)
-        {
-            return date.ToString(dateFormat);
-        }
-
-
-
-        /// <summary>
-        /// Parse a date using the specified format.
-        /// </summary>
-        /// <param name="when">A string that contains a date in the specified format.</param>
-        /// <returns>A DateTime that was parsed.</returns>
-        public static DateTime ParseDate(String when)
-        {
-            try
-            {
-                return DateTime.ParseExact(when, dateFormat, 
-                    CultureInfo.InvariantCulture);
-            }
-            catch (FormatException)
-            {
-                return default(DateTime);
-            }
-        }
-
-
-#if logging
-        /// <summary>
-        /// The logging object.
-        /// </summary>
-        private readonly ILog logger = LogManager.GetLogger(typeof(ReadCSV));
-#endif
-        /// <summary>
-        /// The file to read.
-        /// </summary>
-        private TextReader reader;
+        private readonly IList<String> _columnNames = new List<String>();
 
         /// <summary>
         /// The names of the columns.
         /// </summary>
-        private IDictionary<String, int> columns = new Dictionary<String, int>();
+        private readonly IDictionary<String, int> _columns = new Dictionary<String, int>();
+
+        /// <summary>
+        /// The file to read.
+        /// </summary>
+        private readonly TextReader _reader;
 
         /// <summary>
         /// The data.
         /// </summary>
-        private String[] data;
+        private String[] _data;
 
         /// <summary>
         /// The delimiter.
         /// </summary>
-        private char delim;
+        private char _delim;
+
+        private CSVFormat _format;
 
         /// <summary>
         /// Construct a CSV reader from an input stream.
@@ -117,11 +71,11 @@ namespace Encog.Util.CSV
         /// <param name="headers">Are headers present?</param>
         /// <param name="delim">What is the delimiter.</param>
         public ReadCSV(Stream istream, bool headers,
-                     char delim)
+                       char delim)
         {
-            CSVFormat format = new CSVFormat(CSVFormat.DecimalCharacter, delim);
-            this.reader = new StreamReader(istream);
-            this.delim = delim;
+            var format = new CSVFormat(CSVFormat.DecimalCharacter, delim);
+            _reader = new StreamReader(istream);
+            _delim = delim;
             Begin(headers, format);
         }
 
@@ -132,13 +86,12 @@ namespace Encog.Util.CSV
         /// <param name="headers">The headers.</param>
         /// <param name="delim">The delimiter.</param>
         public ReadCSV(String filename, bool headers,
-                 char delim)
+                       char delim)
         {
-            CSVFormat format = new CSVFormat(CSVFormat.DecimalCharacter, delim);
-            this.reader = new StreamReader(filename);
-            this.delim = delim;
+            var format = new CSVFormat(CSVFormat.DecimalCharacter, delim);
+            _reader = new StreamReader(filename);
+            _delim = delim;
             Begin(headers, format);
-
         }
 
         /// <summary>
@@ -151,14 +104,12 @@ namespace Encog.Util.CSV
         /// <param name="headers">The headers.</param>
         /// <param name="format">The delimiter.</param>
         public ReadCSV(String filename, bool headers,
-                 CSVFormat format)
+                       CSVFormat format)
         {
-
-            this.reader = new StreamReader(filename);
+            _reader = new StreamReader(filename);
             Begin(headers, format);
-
         }
-        
+
         /// <summary>
         /// Construct a CSV reader from an input stream.
         /// The format parameter specifies the separator 
@@ -169,10 +120,70 @@ namespace Encog.Util.CSV
         /// <param name="headers">Are headers present?</param>
         /// <param name="format">What is the CSV format.</param>
         public ReadCSV(Stream stream, bool headers,
-                     CSVFormat format)
+                       CSVFormat format)
         {
-            this.reader = new StreamReader(stream);
+            _reader = new StreamReader(stream);
             Begin(headers, format);
+        }
+
+        /// <summary>
+        /// The format that dates are expected to be in. (i.e. "yyyy-MM-dd")
+        /// </summary>
+        public String DateFormat { get; set; }
+
+        /// <summary>
+        /// The format that times are expected to be in. (i.e. "hhmmss").
+        /// </summary>
+        public String TimeFormat { get; set; }
+
+        /// <summary>
+        /// The current format.
+        /// </summary>
+        public CSVFormat Format
+        {
+            get { return _format; }
+        }
+
+        /// <summary>
+        /// The names of the columns.
+        /// </summary>
+        public IList<String> ColumnNames
+        {
+            get { return _columnNames; }
+        }
+
+        /// <summary>
+        /// Return the number of columns, if known. 
+        /// </summary>
+        public int ColumnCount
+        {
+            get
+            {
+                if (_data == null)
+                {
+                    return 0;
+                }
+                return _data.Length;
+            }
+        }
+
+        /// <summary>
+        /// Parse a date using the specified format.
+        /// </summary>
+        /// <param name="when">A string that contains a date in the specified format.</param>
+        /// <param name="dateFormat">The date format.</param>
+        /// <returns>A DateTime that was parsed.</returns>
+        public static DateTime ParseDate(String when, String dateFormat)
+        {
+            try
+            {
+                return DateTime.ParseExact(when, dateFormat,
+                                           CultureInfo.InvariantCulture);
+            }
+            catch (FormatException)
+            {
+                return default(DateTime);
+            }
         }
 
 
@@ -185,28 +196,33 @@ namespace Encog.Util.CSV
         {
             try
             {
-                this.format = format;
+                DateFormat = "yyyy-MM-dd";
+                TimeFormat = "hhmmss";
+                _format = format;
                 // read the column heads
                 if (headers)
                 {
-                    String line = this.reader.ReadLine();
+                    String line = _reader.ReadLine();
                     IList<String> tok = Parse(line);
 
                     int i = 0;
                     foreach (String header in tok)
                     {
-                        this.columns.Add(header.ToLower(), i++);
+                        if (_columns.ContainsKey(header.ToLower()))
+                            throw new EncogError("Two columns cannot have the same name");
+                        _columns.Add(header.ToLower(), i++);
+                        _columnNames.Add(header);
                     }
                 }
 
-                this.data = null;
+                _data = null;
             }
             catch (IOException e)
             {
 #if logging
-                if (this.logger.IsErrorEnabled)
+                if (logger.IsErrorEnabled)
                 {
-                    this.logger.Error("Exception", e);
+                    logger.Error("Exception", e);
                 }
 #endif
                 throw new EncogError(e);
@@ -220,14 +236,14 @@ namespace Encog.Util.CSV
         {
             try
             {
-                this.reader.Close();
+                _reader.Close();
             }
             catch (IOException e)
             {
 #if logging
-                if (this.logger.IsErrorEnabled)
+                if (logger.IsErrorEnabled)
                 {
-                    this.logger.Error("Exception", e);
+                    logger.Error("Exception", e);
                 }
 #endif
                 throw new EncogError(e);
@@ -241,7 +257,7 @@ namespace Encog.Util.CSV
         /// <returns>The column as a string.</returns>
         public String Get(int i)
         {
-            return this.data[i];
+            return _data[i];
         }
 
         /// <summary>
@@ -252,25 +268,25 @@ namespace Encog.Util.CSV
         /// <returns>The column data as a string.</returns>
         public String Get(String column)
         {
-            if (!this.columns.ContainsKey(column.ToLower()))
+            if (!_columns.ContainsKey(column.ToLower()))
                 return null;
-            int i = this.columns[column.ToLower()];
+            int i = _columns[column.ToLower()];
 
-            return this.data[i];
+            return _data[i];
         }
 
         /// <summary>
         /// Get the column count.
         /// </summary>
         /// <returns>The column count.</returns>
-        public int GetColumnCount()
+        public int GetCount()
         {
-            if (this.data == null)
+            if (_data == null)
             {
                 return 0;
             }
 
-            return this.data.Length;
+            return _data.Length;
         }
 
         /// <summary>
@@ -281,7 +297,40 @@ namespace Encog.Util.CSV
         public DateTime GetDate(String column)
         {
             String str = Get(column);
-            return DateTime.Parse(str);
+            return DateTime.ParseExact(str, DateFormat, CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>
+        /// Read the specified column as a time.
+        /// </summary>
+        /// <param name="column">The specified column.</param>
+        /// <returns>The specified column as a DateTime.</returns>
+        public DateTime GetTime(String column)
+        {
+            String str = Get(column);
+            return DateTime.ParseExact(str, TimeFormat, CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>
+        /// Read the specified column as a date.
+        /// </summary>
+        /// <param name="column">The specified column.</param>
+        /// <returns>The specified column as a DateTime.</returns>
+        public DateTime GetDate(int column)
+        {
+            String str = Get(column);
+            return DateTime.ParseExact(str, DateFormat, CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>
+        /// Read the specified column as a time.
+        /// </summary>
+        /// <param name="column">The specified column.</param>
+        /// <returns>The specified column as a DateTime.</returns>
+        public DateTime GetTime(int column)
+        {
+            String str = Get(column);
+            return DateTime.ParseExact(str, TimeFormat, CultureInfo.InvariantCulture);
         }
 
         /// <summary>
@@ -292,7 +341,7 @@ namespace Encog.Util.CSV
         public double GetDouble(String column)
         {
             String str = Get(column);
-            return this.format.Parse(str);
+            return _format.Parse(str);
         }
 
         /// <summary>
@@ -303,7 +352,7 @@ namespace Encog.Util.CSV
         public double GetDouble(int column)
         {
             String str = Get(column);
-            return this.format.Parse(str);
+            return _format.Parse(str);
         }
 
         /// <summary>
@@ -328,11 +377,10 @@ namespace Encog.Util.CSV
         /// Count the columns and create a an array to hold them.
         /// </summary>
         /// <param name="line">One line from the file</param>
-        private void InitData(String line)
+        private void InitData(string line)
         {
             IList<String> tok = Parse(line);
-            this.data = new String[tok.Count];
-
+            _data = new String[tok.Count];
         }
 
 
@@ -342,16 +390,21 @@ namespace Encog.Util.CSV
         /// <returns>True if there are more lines to read.</returns>
         public bool Next()
         {
-
             try
             {
-                String line = this.reader.ReadLine();
+                String line;
+
+                do
+                {
+                    line = _reader.ReadLine();
+                } while ((line != null) && line.Trim().Length == 0);
+
                 if (line == null)
                 {
                     return false;
                 }
 
-                if (this.data == null)
+                if (_data == null)
                 {
                     InitData(line);
                 }
@@ -361,9 +414,9 @@ namespace Encog.Util.CSV
                 int i = 0;
                 foreach (String str in tok)
                 {
-                    if (i < this.data.Length)
+                    if (i < _data.Length)
                     {
-                        this.data[i++] = str;
+                        _data[i++] = str;
                     }
                 }
 
@@ -372,44 +425,62 @@ namespace Encog.Util.CSV
             catch (IOException e)
             {
 #if logging
-                if (this.logger.IsErrorEnabled)
+                if (logger.IsErrorEnabled)
                 {
-                    this.logger.Error("Exception", e);
+                    logger.Error("Exception", e);
                 }
 #endif
                 throw new EncogError(e);
             }
-
         }
 
+        private IList<String> Parse(string line)
+        {
+            if (Format.Separator == ' ')
+            {
+                return ParseSpaceSep(line);
+            }
+            else
+            {
+                return ParseCharSep(line);
+            }
+        }
 
         /// <summary>
         /// Parse the line into a list of values.
         /// </summary>
         /// <param name="line">The line to parse.</param>
         /// <returns>The elements on this line.</returns>
-        private IList<String> Parse(String line)
+        private IList<String> ParseCharSep(string line)
         {
-            StringBuilder item = new StringBuilder();
-            IList<String> result = new List<String>();
+            var item = new StringBuilder();
+            var result = new List<String>();
             bool quoted = false;
+            bool hadQuotes = false;
 
             for (int i = 0; i < line.Length; i++)
             {
                 char ch = line[i];
-                if ((ch == this.format.Separator) && !quoted)
+                if ((ch == Format.Separator) && !quoted)
                 {
-                    result.Add(item.ToString());
+                    String s = item.ToString();
+                    if (!hadQuotes)
+                    {
+                        s = s.Trim();
+                    }
+                    result.Add(s);
                     item.Length = 0;
                     quoted = false;
-                }
-                else if ((ch == '\"') && (item.Length == 0))
-                {
-                    quoted = true;
+                    hadQuotes = false;
                 }
                 else if ((ch == '\"') && quoted)
                 {
                     quoted = false;
+                }
+                else if ((ch == '\"') && (item.Length == 0))
+                {
+                    hadQuotes = true;
+                    quoted = true;
                 }
                 else
                 {
@@ -419,11 +490,65 @@ namespace Encog.Util.CSV
 
             if (item.Length > 0)
             {
-                result.Add(item.ToString());
+                String s = item.ToString();
+                if (!hadQuotes)
+                {
+                    s = s.Trim();
+                }
+                result.Add(s);
             }
 
             return result;
         }
 
+        /// <summary>
+        /// Parse a line with space separators.
+        /// </summary>
+        /// <param name="line">The line to parse.</param>
+        /// <returns>The list of items from the line.</returns>
+        private static List<String> ParseSpaceSep(String line)
+        {
+            var result = new List<String>();
+            var parse = new SimpleParser(line);
+
+            while (!parse.EOL())
+            {
+                result.Add(parse.Peek() == '\"' ? parse.ReadQuotedString() : parse.ReadToWhiteSpace());
+                parse.EatWhiteSpace();
+            }
+
+            return result;
+        }
+
+
+        internal long GetLong(int col)
+        {
+            String str = Get(col);
+            try
+            {
+                return long.Parse(str);
+            }
+            catch (FormatException)
+            {
+                return 0;
+            }
+        }
+
+        /// <summary>
+        /// Check to see if there are any missing values on the current row.
+        /// </summary>
+        /// <returns>True, if there are missing values.</returns>
+        public bool HasMissing()
+        {
+            for (int i = 0; i < _data.Length; i++)
+            {
+                String s = _data[i].Trim();
+                if (s.Length == 0 || s.Equals("?"))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 }

@@ -1,35 +1,27 @@
-// Encog(tm) Artificial Intelligence Framework v2.5
-// .Net Version
+//
+// Encog(tm) Core v3.0 - .Net Version
 // http://www.heatonresearch.com/encog/
-// http://code.google.com/p/encog-java/
-// 
-// Copyright 2008-2010 by Heaton Research Inc.
-// 
-// Released under the LGPL.
 //
-// This is free software; you can redistribute it and/or modify it
-// under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 2.1 of
-// the License, or (at your option) any later version.
+// Copyright 2008-2011 Heaton Research, Inc.
 //
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-// Lesser General Public License for more details.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// You should have received a copy of the GNU Lesser General Public
-// License along with this software; if not, write to the Free
-// Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-// 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-// 
-// Encog and Heaton Research are Trademarks of Heaton Research, Inc.
-// For information on Heaton Research trademarks, visit:
-// 
-// http://www.heatonresearch.com/copyright.html
-
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
 #if !SILVERLIGHT
 using System;
-using System.Collections.Generic;
 using System.Text;
 using System.Xml;
 
@@ -42,18 +34,32 @@ namespace Encog.Bot.RSS
     public class RSSItem
     {
         /// <summary>
+        /// The date this item was published.
+        /// </summary>
+        private DateTime _date;
+
+        /// <summary>
+        /// The description of this item.
+        /// </summary>
+        private String _description;
+
+        /// <summary>
+        /// The hyperlink to this item.
+        /// </summary>
+        private String _link;
+
+        /// <summary>
+        /// The title of this item.
+        /// </summary>
+        private String _title;
+
+        /// <summary>
         /// The title of this item.
         /// </summary>
         public String Title
         {
-            get
-            {
-                return title;
-            }
-            set
-            {
-                title = value;
-            }
+            get { return _title; }
+            set { _title = value; }
         }
 
         /// <summary>
@@ -61,14 +67,8 @@ namespace Encog.Bot.RSS
         /// </summary>
         public String Link
         {
-            get
-            {
-                return link;
-            }
-            set
-            {
-                link = value;
-            }
+            get { return _link; }
+            set { _link = value; }
         }
 
 
@@ -77,14 +77,8 @@ namespace Encog.Bot.RSS
         /// </summary>
         public String Description
         {
-            get
-            {
-                return description;
-            }
-            set
-            {
-                description = value;
-            }
+            get { return _description; }
+            set { _description = value; }
         }
 
         /// <summary>
@@ -92,35 +86,9 @@ namespace Encog.Bot.RSS
         /// </summary>
         public DateTime Date
         {
-            get
-            {
-                return date;
-            }
-            set
-            {
-                date = value;
-            }
+            get { return _date; }
+            set { _date = value; }
         }
-
-        /// <summary>
-        /// The title of this item.
-        /// </summary>
-        private String title;
-
-        /// <summary>
-        /// The hyperlink to this item.
-        /// </summary>
-        private String link;
-
-        /// <summary>
-        /// The description of this item.
-        /// </summary>
-        private String description;
-
-        /// <summary>
-        /// The date this item was published.
-        /// </summary>
-        private DateTime date;
 
 
         /// <summary>
@@ -129,24 +97,21 @@ namespace Encog.Bot.RSS
         /// <param name="node">The Node to load the item from.</param>
         public void Load(XmlNode node)
         {
-            
-            foreach(XmlNode n in node.ChildNodes )
+            foreach (XmlNode n in node.ChildNodes)
             {
                 String name = n.Name;
 
                 if (String.Compare(name, "title", true) == 0)
-                    title = n.InnerText;
+                    _title = n.InnerText;
                 else if (String.Compare(name, "link", true) == 0)
-                    link = n.InnerText;
+                    _link = n.InnerText;
                 else if (String.Compare(name, "description", true) == 0)
-                    description = n.InnerText;
+                    _description = n.InnerText;
                 else if (String.Compare(name, "pubDate", true) == 0)
                 {
                     String str = n.InnerText;
-                    if (str != null)
-                        date = RSS.ParseDate(str);
+                    _date = RSS.ParseDate(str);
                 }
-
             }
         }
 
@@ -157,17 +122,18 @@ namespace Encog.Bot.RSS
         /// <returns>The object as a String.</returns>
         public override String ToString()
         {
-            StringBuilder builder = new StringBuilder();
+            var builder = new StringBuilder();
             builder.Append('[');
             builder.Append("title=\"");
-            builder.Append(title);
+            builder.Append(_title);
             builder.Append("\",link=\"");
-            builder.Append(link);
+            builder.Append(_link);
             builder.Append("\",date=\"");
-            builder.Append(date);
+            builder.Append(_date);
             builder.Append("\"]");
             return builder.ToString();
         }
     }
 }
+
 #endif

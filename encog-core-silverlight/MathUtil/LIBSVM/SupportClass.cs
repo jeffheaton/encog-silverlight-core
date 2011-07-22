@@ -1,6 +1,27 @@
-
-
+//
+// Encog(tm) Core v3.0 - .Net Version
+// http://www.heatonresearch.com/encog/
+//
+// Copyright 2008-2011 Heaton Research, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
 using System;
+using System.Collections;
 
 namespace Encog.MathUtil.LIBSVM
 {
@@ -59,23 +80,28 @@ namespace Encog.MathUtil.LIBSVM
     /// </summary>
     public class SupportClass
     {
-        //Provides access to a static System.Random class instance
-        static public System.Random Random = new System.Random();
+        /// <summary>
+        /// Provides access to a static System.Random class instance
+        /// </summary>
+        public static Random Random = new Random();
 
         /*******************************/
+
+        #region Nested type: Tokenizer
+
         /// <summary>
         /// The class performs token processing in strings
         /// </summary>
-        public class Tokenizer : System.Collections.IEnumerator
+        public class Tokenizer : IEnumerator
         {
-            /// Position over the string
-            private long currentPos = 0;
+            /// Char representation of the String to tokenize.
+            private readonly char[] chars;
 
             /// Include demiliters in the results.
-            private bool includeDelims = false;
+            private readonly bool includeDelims;
 
-            /// Char representation of the String to tokenize.
-            private char[] chars = null;
+            /// Position over the string
+            private long currentPos;
 
             //The tokenizer uses the default delimiter set: the space character, the tab character, the newline character, and the carriage-return character and the form-feed character
             private string delimiters = " \t\n\r\f";
@@ -84,9 +110,9 @@ namespace Encog.MathUtil.LIBSVM
             /// Initializes a new class instance with a specified string to process
             /// </summary>
             /// <param name="source">String to tokenize</param>
-            public Tokenizer(System.String source)
+            public Tokenizer(String source)
             {
-                this.chars = source.ToCharArray();
+                chars = source.ToCharArray();
             }
 
             /// <summary>
@@ -95,7 +121,7 @@ namespace Encog.MathUtil.LIBSVM
             /// </summary>
             /// <param name="source">String to tokenize</param>
             /// <param name="delimiters">String containing the delimiters</param>
-            public Tokenizer(System.String source, System.String delimiters)
+            public Tokenizer(String source, String delimiters)
                 : this(source)
             {
                 this.delimiters = delimiters;
@@ -109,7 +135,7 @@ namespace Encog.MathUtil.LIBSVM
             /// <param name="source">String to tokenize</param>
             /// <param name="delimiters">String containing the delimiters</param>
             /// <param name="includeDelims">Determines if delimiters are included in the results.</param>
-            public Tokenizer(System.String source, System.String delimiters, bool includeDelims)
+            public Tokenizer(String source, String delimiters, bool includeDelims)
                 : this(source, delimiters)
             {
                 this.includeDelims = includeDelims;
@@ -117,12 +143,68 @@ namespace Encog.MathUtil.LIBSVM
 
 
             /// <summary>
+            /// Remaining tokens count
+            /// </summary>
+            public int Count
+            {
+                get
+                {
+                    //keeping the current pos
+                    long pos = currentPos;
+                    int i = 0;
+
+                    try
+                    {
+                        while (true)
+                        {
+                            NextToken();
+                            i++;
+                        }
+                    }
+                    catch (ArgumentOutOfRangeException)
+                    {
+                        currentPos = pos;
+                        return i;
+                    }
+                }
+            }
+
+            #region IEnumerator Members
+
+            /// <summary>
+            ///  Performs the same action as NextToken.
+            /// </summary>
+            public Object Current
+            {
+                get { return NextToken(); }
+            }
+
+            /// <summary>
+            ///  Performs the same action as HasMoreTokens.
+            /// </summary>
+            /// <returns>True or false, depending if there are more tokens</returns>
+            public bool MoveNext()
+            {
+                return HasMoreTokens();
+            }
+
+            /// <summary>
+            /// Does nothing.
+            /// </summary>
+            public void Reset()
+            {
+                ;
+            }
+
+            #endregion
+
+            /// <summary>
             /// Returns the next token from the token list
             /// </summary>
             /// <returns>The string value of the token</returns>
-            public System.String NextToken()
+            public String NextToken()
             {
-                return NextToken(this.delimiters);
+                return NextToken(delimiters);
             }
 
             /// <summary>
@@ -131,45 +213,45 @@ namespace Encog.MathUtil.LIBSVM
             /// </summary>
             /// <param name="delimiters">String containing the delimiters to use</param>
             /// <returns>The string value of the token</returns>
-            public System.String NextToken(System.String delimiters)
+            public String NextToken(String delimiters)
             {
                 //According to documentation, the usage of the received delimiters should be temporary (only for this call).
                 //However, it seems it is not true, so the following line is necessary.
                 this.delimiters = delimiters;
 
                 //at the end 
-                if (this.currentPos == this.chars.Length)
-                    throw new System.ArgumentOutOfRangeException();
-                //if over a delimiter and delimiters must be returned
-                else if ((System.Array.IndexOf(delimiters.ToCharArray(), chars[this.currentPos]) != -1)
-                         && this.includeDelims)
-                    return "" + this.chars[this.currentPos++];
-                //need to get the token wo delimiters.
+                if (currentPos == chars.Length)
+                    throw new ArgumentOutOfRangeException();
+                    //if over a delimiter and delimiters must be returned
+                else if ((Array.IndexOf(delimiters.ToCharArray(), chars[currentPos]) != -1)
+                         && includeDelims)
+                    return "" + chars[currentPos++];
+                    //need to get the token wo delimiters.
                 else
                     return nextToken(delimiters.ToCharArray());
             }
 
             //Returns the nextToken wo delimiters
-            private System.String nextToken(char[] delimiters)
+            private String nextToken(char[] delimiters)
             {
                 string token = "";
-                long pos = this.currentPos;
+                long pos = currentPos;
 
                 //skip possible delimiters
-                while (System.Array.IndexOf(delimiters, this.chars[currentPos]) != -1)
+                while (Array.IndexOf(delimiters, chars[currentPos]) != -1)
                     //The last one is a delimiter (i.e there is no more tokens)
-                    if (++this.currentPos == this.chars.Length)
+                    if (++currentPos == chars.Length)
                     {
-                        this.currentPos = pos;
-                        throw new System.ArgumentOutOfRangeException();
+                        currentPos = pos;
+                        throw new ArgumentOutOfRangeException();
                     }
 
                 //getting the token
-                while (System.Array.IndexOf(delimiters, this.chars[this.currentPos]) == -1)
+                while (Array.IndexOf(delimiters, chars[currentPos]) == -1)
                 {
-                    token += this.chars[this.currentPos];
+                    token += chars[currentPos];
                     //the last one is not a delimiter
-                    if (++this.currentPos == this.chars.Length)
+                    if (++currentPos == chars.Length)
                         break;
                 }
                 return token;
@@ -183,77 +265,24 @@ namespace Encog.MathUtil.LIBSVM
             public bool HasMoreTokens()
             {
                 //keeping the current pos
-                long pos = this.currentPos;
+                long pos = currentPos;
 
                 try
                 {
-                    this.NextToken();
+                    NextToken();
                 }
-                catch (System.ArgumentOutOfRangeException)
+                catch (ArgumentOutOfRangeException)
                 {
                     return false;
                 }
                 finally
                 {
-                    this.currentPos = pos;
+                    currentPos = pos;
                 }
                 return true;
             }
-
-            /// <summary>
-            /// Remaining tokens count
-            /// </summary>
-            public int Count
-            {
-                get
-                {
-                    //keeping the current pos
-                    long pos = this.currentPos;
-                    int i = 0;
-
-                    try
-                    {
-                        while (true)
-                        {
-                            this.NextToken();
-                            i++;
-                        }
-                    }
-                    catch (System.ArgumentOutOfRangeException)
-                    {
-                        this.currentPos = pos;
-                        return i;
-                    }
-                }
-            }
-
-            /// <summary>
-            ///  Performs the same action as NextToken.
-            /// </summary>
-            public System.Object Current
-            {
-                get
-                {
-                    return (Object)this.NextToken();
-                }
-            }
-
-            /// <summary>
-            ///  Performs the same action as HasMoreTokens.
-            /// </summary>
-            /// <returns>True or false, depending if there are more tokens</returns>
-            public bool MoveNext()
-            {
-                return this.HasMoreTokens();
-            }
-
-            /// <summary>
-            /// Does nothing.
-            /// </summary>
-            public void Reset()
-            {
-                ;
-            }
         }
+
+        #endregion
     }
 }

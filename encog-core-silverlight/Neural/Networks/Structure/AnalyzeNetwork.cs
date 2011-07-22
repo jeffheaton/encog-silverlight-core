@@ -1,256 +1,238 @@
-// Encog(tm) Artificial Intelligence Framework v2.5
-// .Net Version
+//
+// Encog(tm) Core v3.0 - .Net Version
 // http://www.heatonresearch.com/encog/
-// http://code.google.com/p/encog-java/
-// 
-// Copyright 2008-2010 by Heaton Research Inc.
-// 
-// Released under the LGPL.
 //
-// This is free software; you can redistribute it and/or modify it
-// under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 2.1 of
-// the License, or (at your option) any later version.
+// Copyright 2008-2011 Heaton Research, Inc.
 //
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-// Lesser General Public License for more details.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// You should have received a copy of the GNU Lesser General Public
-// License along with this software; if not, write to the Free
-// Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-// 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-// 
-// Encog and Heaton Research are Trademarks of Heaton Research, Inc.
-// For information on Heaton Research trademarks, visit:
-// 
-// http://www.heatonresearch.com/copyright.html
-
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using Encog.MathUtil;
 using Encog.Neural.Networks.Layers;
-using Encog.Neural.Networks.Synapse;
 using Encog.Util;
-using Encog.Engine.Util;
 
 namespace Encog.Neural.Networks.Structure
 {
     /// <summary>
     /// Allows the weights and bias values of the neural network to be analyzed.
     /// </summary>
+    ///
     public class AnalyzeNetwork
     {
         /// <summary>
-        /// The ranges of the weights.
+        /// All of the values in the neural network.
         /// </summary>
-        private NumericRange weights;
+        ///
+        private readonly double[] _allValues;
 
         /// <summary>
         /// The ranges of the bias values.
         /// </summary>
-        private NumericRange bias;
-
-        /// <summary>
-        /// The ranges of both the weights and biases.
-        /// </summary>
-        private NumericRange weightsAndBias;
-
-        /// <summary>
-        /// The number of disabled connections.
-        /// </summary>
-        private int disabledConnections;
-
-        /// <summary>
-        /// The total number of connections.
-        /// </summary>
-        private int totalConnections;
-
-        /// <summary>
-        /// All of the values in the neural network.
-        /// </summary>
-        private double[] allValues;
-
-        /// <summary>
-        /// The weight values in the neural network.
-        /// </summary>
-        private double[] weightValues;
+        ///
+        private readonly NumericRange _bias;
 
         /// <summary>
         /// The bias values in the neural network.
         /// </summary>
-        private double[] biasValues;
+        ///
+        private readonly double[] _biasValues;
 
         /// <summary>
-        /// Construct a network analyze class.  Analyze the specified network.
+        /// The number of disabled connections.
         /// </summary>
+        ///
+        private readonly int _disabledConnections;
+
+        /// <summary>
+        /// The total number of connections.
+        /// </summary>
+        ///
+        private readonly int _totalConnections;
+
+        /// <summary>
+        /// The weight values in the neural network.
+        /// </summary>
+        ///
+        private readonly double[] _weightValues;
+
+        /// <summary>
+        /// The ranges of the weights.
+        /// </summary>
+        ///
+        private readonly NumericRange _weights;
+
+        /// <summary>
+        /// The ranges of both the weights and biases.
+        /// </summary>
+        ///
+        private readonly NumericRange _weightsAndBias;
+
+        /// <summary>
+        /// Construct a network analyze class. Analyze the specified network.
+        /// </summary>
+        ///
         /// <param name="network">The network to analyze.</param>
         public AnalyzeNetwork(BasicNetwork network)
         {
             int assignDisabled = 0;
             int assignedTotal = 0;
-            IList<double> biasList = new List<double>();
-            IList<double> weightList = new List<double>();
-            IList<double> allList = new List<double>();
+            IList<Double> biasList = new List<Double>();
+            IList<Double> weightList = new List<Double>();
+            IList<Double> allList = new List<Double>();
 
-            foreach (ILayer layer in network.Structure.Layers)
+            for (int layerNumber = 0; layerNumber < network.LayerCount - 1; layerNumber++)
             {
-                if (layer.HasBias)
-                {
-                    for (int i = 0; i < layer.NeuronCount; i++)
-                    {
-                        biasList.Add(layer.BiasWeights[i]);
-                        allList.Add(layer.BiasWeights[i]);
-                    }
-                }
-            }
 
-            foreach (ISynapse synapse in network.Structure.Synapses)
-            {
-                if (synapse.MatrixSize > 0)
+                int fromCount = network.GetLayerNeuronCount(layerNumber);
+                int fromBiasCount = network
+                    .GetLayerTotalNeuronCount(layerNumber);
+                int toCount = network.GetLayerNeuronCount(layerNumber + 1);
+
+                // weights
+                for (int fromNeuron = 0; fromNeuron < fromCount; fromNeuron++)
                 {
-                    for (int from = 0; from < synapse.FromNeuronCount; from++)
+                    for (int toNeuron = 0; toNeuron < toCount; toNeuron++)
                     {
-                        for (int to = 0; to < synapse.ToNeuronCount; to++)
+                        double v = network.GetWeight(layerNumber, fromNeuron,
+                                                     toNeuron);
+
+                        if (network.Structure.ConnectionLimited )
                         {
-                            if (network.IsConnected(synapse, from, to))
-                            {
-                                double d = synapse.WeightMatrix[from, to];
-                                weightList.Add(d);
-                                allList.Add(d);
-                            }
-                            else
+                            if (Math.Abs(v) < network.Structure.ConnectionLimit )
                             {
                                 assignDisabled++;
                             }
-                            assignedTotal++;
                         }
+
+                        weightList.Add(v);
+                        allList.Add(v);
+                        assignedTotal++;
+                    }
+                }
+
+                // bias
+                if (fromCount != fromBiasCount)
+                {
+                    int biasNeuron = fromCount;
+                    for (int toNeuron = 0; toNeuron < toCount; toNeuron++)
+                    {
+                        double v = network.GetWeight(layerNumber, biasNeuron,
+                                                       toNeuron);
+                        if (network.Structure.ConnectionLimited)
+                        {
+                            if (Math.Abs(v) < network.Structure.ConnectionLimit)
+                            {
+                                assignDisabled++;
+                            }
+                        }
+
+                        biasList.Add(v);
+                        allList.Add(v);
+                        assignedTotal++;
                     }
                 }
             }
 
-            this.disabledConnections = assignDisabled;
-            this.totalConnections = assignedTotal;
-            this.weights = new NumericRange(weightList);
-            this.bias = new NumericRange(biasList);
-            this.weightsAndBias = new NumericRange(allList);
-            this.weightValues = EngineArray.ListToDouble(weightList);
-            this.allValues = EngineArray.ListToDouble(allList);
-            this.biasValues = EngineArray.ListToDouble(biasList);
-        }
-
-        /// <summary>
-        /// The network analysis as a string.
-        /// </summary>
-        /// <returns>The network analysis as a string.</returns>
-        public override String ToString()
-        {
-            StringBuilder result = new StringBuilder();
-            result.Append("All Values : ");
-            result.Append(this.weightsAndBias.ToString());
-            result.Append("\n");
-            result.Append("Bias : ");
-            result.Append(this.bias.ToString());
-            result.Append("\n");
-            result.Append("Weights    : ");
-            result.Append(this.weights.ToString());
-            result.Append("\n");
-            result.Append("Disabled   : ");
-            result.Append(Format.FormatInteger(this.disabledConnections));
-            result.Append("\n");
-            return result.ToString();
-        }
-
-        /// <summary>
-        /// The numeric range of the weights values.
-        /// </summary>
-        public NumericRange Weights
-        {
-            get
-            {
-                return weights;
-            }
+            _disabledConnections = assignDisabled;
+            _totalConnections = assignedTotal;
+            _weights = new NumericRange(weightList);
+            _bias = new NumericRange(biasList);
+            _weightsAndBias = new NumericRange(allList);
+            _weightValues = EngineArray.ListToDouble(weightList);
+            _allValues = EngineArray.ListToDouble(allList);
+            _biasValues = EngineArray.ListToDouble(biasList);
         }
 
 
-        /// <summary>
-        /// The numeric range of the bias values.
-        /// </summary>
-        public NumericRange Bias
-        {
-            get
-            {
-                return bias;
-            }
-        }
-
-        /// <summary>
-        /// The numeric range of the weights and bias values.
-        /// </summary>
-        public NumericRange WeightsAndBias
-        {
-            get
-            {
-                return weightsAndBias;
-            }
-        }
-
-        /// <summary>
-        /// The number of disabled connections in the network.
-        /// </summary>
-        public int DisabledConnections
-        {
-            get
-            {
-                return disabledConnections;
-            }
-        }
-
-        /// <summary>
-        /// The total number of connections in the network.
-        /// </summary>
-        public int TotalConnections
-        {
-            get
-            {
-                return totalConnections;
-            }
-        }
-
-        /// <summary>
-        /// All of the values in the neural network.
-        /// </summary>
+        /// <value>All of the values in the neural network.</value>
         public double[] AllValues
         {
-            get
-            {
-                return allValues;
-            }
+            get { return _allValues; }
         }
 
-        /// <summary>
-        /// The weight values in the neural network.
-        /// </summary>
-        public double[] WeightValues
+
+        /// <value>The numeric range of the bias values.</value>
+        public NumericRange Bias
         {
-            get
-            {
-                return weightValues;
-            }
+            get { return _bias; }
         }
 
-        /// <summary>
-        /// The bias values in the neural network.
-        /// </summary>
+
+        /// <value>The bias values in the neural network.</value>
         public double[] BiasValues
         {
-            get
-            {
-                return biasValues;
-            }
+            get { return _biasValues; }
+        }
+
+
+        /// <value>The number of disabled connections in the network.</value>
+        public int DisabledConnections
+        {
+            get { return _disabledConnections; }
+        }
+
+
+        /// <value>The total number of connections in the network.</value>
+        public int TotalConnections
+        {
+            get { return _totalConnections; }
+        }
+
+
+        /// <value>The numeric range of the weights values.</value>
+        public NumericRange Weights
+        {
+            get { return _weights; }
+        }
+
+
+        /// <value>The numeric range of the weights and bias values.</value>
+        public NumericRange WeightsAndBias
+        {
+            get { return _weightsAndBias; }
+        }
+
+
+        /// <value>The weight values in the neural network.</value>
+        public double[] WeightValues
+        {
+            get { return _weightValues; }
+        }
+
+
+        /// <inheritdoc/>
+        public override sealed String ToString()
+        {
+            var result = new StringBuilder();
+            result.Append("All Values : ");
+            result.Append((_weightsAndBias.ToString()));
+            result.Append("\n");
+            result.Append("Bias : ");
+            result.Append((_bias.ToString()));
+            result.Append("\n");
+            result.Append("Weights    : ");
+            result.Append((_weights.ToString()));
+            result.Append("\n");
+            result.Append("Disabled   : ");
+            result.Append(Format.FormatInteger(_disabledConnections));
+            result.Append("\n");
+            return result.ToString();
         }
     }
 }

@@ -1,36 +1,27 @@
-// Encog(tm) Artificial Intelligence Framework v2.5
-// .Net Version
+//
+// Encog(tm) Core v3.0 - .Net Version
 // http://www.heatonresearch.com/encog/
-// http://code.google.com/p/encog-java/
-// 
-// Copyright 2008-2010 by Heaton Research Inc.
-// 
-// Released under the LGPL.
 //
-// This is free software; you can redistribute it and/or modify it
-// under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 2.1 of
-// the License, or (at your option) any later version.
+// Copyright 2008-2011 Heaton Research, Inc.
 //
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-// Lesser General Public License for more details.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// You should have received a copy of the GNU Lesser General Public
-// License along with this software; if not, write to the Free
-// Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-// 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-// 
-// Encog and Heaton Research are Trademarks of Heaton Research, Inc.
-// For information on Heaton Research trademarks, visit:
-// 
-// http://www.heatonresearch.com/copyright.html
-
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using Encog.Util;
 
 namespace Encog.MathUtil.Matrices.Decomposition
 {
@@ -50,19 +41,19 @@ namespace Encog.MathUtil.Matrices.Decomposition
     public class CholeskyDecomposition
     {
         /// <summary>
+        /// Symmetric and positive definite flag.
+        /// </summary>
+        private readonly bool isspd;
+
+        /// <summary>
         /// Array for internal storage of decomposition.
         /// </summary>
-        private double[][] l;
+        private readonly double[][] l;
 
         /// <summary>
         /// Row and column dimension (square matrix).
         /// </summary>
-        private int n;
-
-        /// <summary>
-        /// Symmetric and positive definite flag.
-        /// </summary>
-        private bool isspd;
+        private readonly int n;
 
         /// <summary>
         /// Cholesky algorithm for symmetric and positive definite matrix.
@@ -70,11 +61,10 @@ namespace Encog.MathUtil.Matrices.Decomposition
         /// <param name="matrix">Square, symmetric matrix.</param>
         public CholeskyDecomposition(Matrix matrix)
         {
-
             // Initialize.
             double[][] a = matrix.Data;
             n = matrix.Rows;
-            l = new double[n][];
+            l = EngineArray.AllocateDouble2D(n,n);
             isspd = (matrix.Cols == n);
             // Main loop.
             for (int j = 0; j < n; j++)
@@ -88,11 +78,11 @@ namespace Encog.MathUtil.Matrices.Decomposition
                     double s = 0.0;
                     for (int i = 0; i < k; i++)
                     {
-                        s += lrowk[i] * lrowj[i];
+                        s += lrowk[i]*lrowj[i];
                     }
-                    s = (a[j][k] - s) / l[k][k];
+                    s = (a[j][k] - s)/l[k][k];
                     lrowj[k] = s;
-                    d = d + s * s;
+                    d = d + s*s;
                     isspd = isspd & (a[k][j] == a[j][k]);
                 }
                 d = a[j][j] - d;
@@ -110,10 +100,7 @@ namespace Encog.MathUtil.Matrices.Decomposition
         /// </summary>
         public bool IsSPD
         {
-            get
-            {
-                return isspd;
-            }
+            get { return isspd; }
         }
 
         /// <summary>
@@ -121,10 +108,7 @@ namespace Encog.MathUtil.Matrices.Decomposition
         /// </summary>
         public Matrix L
         {
-            get
-            {
-                return new Matrix(l);
-            }
+            get { return new Matrix(l); }
         }
 
         /// <summary>
@@ -137,12 +121,12 @@ namespace Encog.MathUtil.Matrices.Decomposition
             if (b.Rows != n)
             {
                 throw new MatrixError(
-                        "Matrix row dimensions must agree.");
+                    "Matrix row dimensions must agree.");
             }
             if (!isspd)
             {
                 throw new MatrixError(
-                        "Matrix is not symmetric positive definite.");
+                    "Matrix is not symmetric positive definite.");
             }
 
             // Copy right hand side.
@@ -156,7 +140,7 @@ namespace Encog.MathUtil.Matrices.Decomposition
                 {
                     for (int i = 0; i < k; i++)
                     {
-                        x[k][j] -= x[i][j] * l[k][i];
+                        x[k][j] -= x[i][j]*l[k][i];
                     }
                     x[k][j] /= l[k][k];
                 }
@@ -169,7 +153,7 @@ namespace Encog.MathUtil.Matrices.Decomposition
                 {
                     for (int i = k + 1; i < n; i++)
                     {
-                        x[k][j] -= x[i][j] * l[i][k];
+                        x[k][j] -= x[i][j]*l[i][k];
                     }
                     x[k][j] /= l[k][k];
                 }

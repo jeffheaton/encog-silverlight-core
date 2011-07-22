@@ -1,40 +1,28 @@
-// Encog(tm) Artificial Intelligence Framework v2.5
-// .Net Version
+//
+// Encog(tm) Core v3.0 - .Net Version
 // http://www.heatonresearch.com/encog/
-// http://code.google.com/p/encog-java/
-// 
-// Copyright 2008-2010 by Heaton Research Inc.
-// 
-// Released under the LGPL.
 //
-// This is free software; you can redistribute it and/or modify it
-// under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 2.1 of
-// the License, or (at your option) any later version.
+// Copyright 2008-2011 Heaton Research, Inc.
 //
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-// Lesser General Public License for more details.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// You should have received a copy of the GNU Lesser General Public
-// License along with this software; if not, write to the Free
-// Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-// 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-// 
-// Encog and Heaton Research are Trademarks of Heaton Research, Inc.
-// For information on Heaton Research trademarks, visit:
-// 
-// http://www.heatonresearch.com/copyright.html
-
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using Encog.ML;
 using Encog.Neural.Networks;
-using Encog.Neural.Networks.Layers;
-using Encog.Neural.Networks.Synapse;
-using Encog.Neural.Networks.Structure;
 
 namespace Encog.MathUtil.Randomize
 {
@@ -42,116 +30,97 @@ namespace Encog.MathUtil.Randomize
     /// Implementation of <i>Nguyen-Widrow</i> weight initialization. This is the
     /// default weight initialization used by Encog, as it generally provides the
     /// most trainable neural network.
-    /// 
-    /// 
-    /// author(from Java Version) StŽphan Corriveau
     /// </summary>
+    ///
     public class NguyenWidrowRandomizer : RangeRandomizer
     {
+        private double _beta;
+        private int _inputCount;
+
         /// <summary>
         /// Construct a Nguyen-Widrow randomizer.
         /// </summary>
+        ///
         /// <param name="min">The min of the range.</param>
         /// <param name="max">The max of the range.</param>
-        public NguyenWidrowRandomizer(double min, double max)
-            : base(min, max)
+        public NguyenWidrowRandomizer(double min, double max) : base(min, max)
         {
-
         }
 
-
+        #region IRandomizer Members
 
         /// <summary>
         /// The Nguyen-Widrow initialization algorithm is the following :
         /// 
         /// 1. Initialize all weight of hidden layers with (ranged) random values
         /// 2. For each hidden layer
-        /// 2.1 calculate beta value, 0.7 * Nth(#neurons of input layer) root of
+        /// 2.1 calculate beta value, 0.7/// Nth(#neurons of input layer) root of
         /// #neurons of current layer 
         /// 2.2 for each synapse
         /// 2.1.1 for each weight 
         /// 2.1.2 Adjust weight by dividing by norm of weight for neuron and
         /// multiplying by beta value
         /// </summary>
-        /// <param name="network">The network to randomize.</param>
-        public override void Randomize(BasicNetwork network)
+        /// <param name="method">The network to randomize.</param>
+        public override sealed void Randomize(IMLMethod method)
         {
-            base.Randomize(network);
-            int neuronCount = 0;
-
-            foreach (ILayer layer in network.Structure.Layers)
+            if (!(method is BasicNetwork))
             {
-                neuronCount += layer.NeuronCount;
+                throw new EncogError("Ngyyen Widrow only works on BasicNetwork.");
             }
 
-            ILayer inputLayer = network.GetLayer(BasicNetwork.TAG_INPUT);
-            ILayer outputLayer = network.GetLayer(BasicNetwork.TAG_OUTPUT);
+            var network = (BasicNetwork) method;
 
-            if (inputLayer == null)
-                throw new EncogError("Must have an input layer for Nguyen-Widrow.");
+            new RangeRandomizer(Min, Max).Randomize(network);
 
-            if (outputLayer == null)
-                throw new EncogError("Must have an output layer for Nguyen-Widrow.");
+            int hiddenNeurons = 0;
 
-            int hiddenNeurons = neuronCount - inputLayer.NeuronCount
-                    - outputLayer.NeuronCount;
+            for (int i = 1; i < network.LayerCount - 1; i++)
+            {
+                hiddenNeurons += network.GetLayerTotalNeuronCount(i);
+            }
 
+            // can't really do much, use regular randomization
             if (hiddenNeurons < 1)
-                throw new EncogError("Must have hidden neurons for Nguyen-Widrow.");
-
-            double beta = 0.7 * Math.Pow(hiddenNeurons, 1.0 / inputLayer
-                    .NeuronCount);
-
-            foreach (ISynapse synapse in network.Structure.Synapses)
             {
-                Randomize(beta, synapse);
+                return;
             }
 
-            network.Structure.FlatUpdate = FlatUpdateNeeded.Flatten;
-            network.Structure.FlattenWeights();
+            _inputCount = network.InputCount;
+            _beta = 0.7d*Math.Pow(hiddenNeurons, 1.0d/network.InputCount);
+
+            base.Randomize(network);
         }
 
+        #endregion
+
         /// <summary>
-        /// Randomize the specified synapse.
+        /// Randomize one level of a neural network.
         /// </summary>
-        /// <param name="beta">The beta value.</param>
-        /// <param name="synapse">The synapse to modify.</param>
-        private void Randomize(double beta, ISynapse synapse)
+        ///
+        /// <param name="network">The network to randomize</param>
+        /// <param name="fromLayer">The from level to randomize.</param>
+        public override void Randomize(BasicNetwork network, int fromLayer)
         {
-            if (synapse.WeightMatrix == null)
-                return;
+            int fromCount = network.GetLayerTotalNeuronCount(fromLayer);
+            int toCount = network.GetLayerNeuronCount(fromLayer + 1);
 
-            for (int j = 0; j < synapse.ToNeuronCount; j++)
+            for (int toNeuron = 0; toNeuron < toCount; toNeuron++)
             {
-                double norm = 0.0;
-
-                // Calculate the Euclidean Norm for the weights
-                for (int k = 0; k < synapse.FromNeuronCount; k++)
+                double n = 0.0;
+                for (int fromNeuron = 0; fromNeuron < fromCount; fromNeuron++)
                 {
-                    double v = synapse.WeightMatrix[k, j];
-                    norm += v * v;
+                    double w = network.GetWeight(fromLayer, fromNeuron, toNeuron);
+                    n += w * w;
                 }
+                n = Math.Sqrt(n);
 
-                if (synapse.ToLayer.HasBias)
+
+                for (int fromNeuron = 0; fromNeuron < fromCount; fromNeuron++)
                 {
-                    double value = synapse.ToLayer.BiasWeights[j];
-                    norm += value * value;
-                }
-
-
-                norm = Math.Sqrt(norm);
-
-                // Rescale the weights using beta and the norm
-                for (int k = 0; k < synapse.FromNeuronCount; k++)
-                {
-                    double value = synapse.WeightMatrix[k, j];
-                    synapse.WeightMatrix[k, j] = beta * value / norm;
-                }
-
-                if (synapse.ToLayer.HasBias)
-                {
-                    double value = synapse.ToLayer.BiasWeights[j];
-                    synapse.ToLayer.BiasWeights[j] = beta * value / norm;
+                    double w = network.GetWeight(fromLayer, fromNeuron, toNeuron);
+                    w = _beta * w / n;
+                    network.SetWeight(fromLayer, fromNeuron, toNeuron, w);
                 }
             }
         }

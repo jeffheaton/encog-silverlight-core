@@ -1,36 +1,28 @@
-// Encog(tm) Artificial Intelligence Framework v2.5
-// .Net Version
+//
+// Encog(tm) Core v3.0 - .Net Version
 // http://www.heatonresearch.com/encog/
-// http://code.google.com/p/encog-java/
-// 
-// Copyright 2008-2010 by Heaton Research Inc.
-// 
-// Released under the LGPL.
 //
-// This is free software; you can redistribute it and/or modify it
-// under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 2.1 of
-// the License, or (at your option) any later version.
+// Copyright 2008-2011 Heaton Research, Inc.
 //
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-// Lesser General Public License for more details.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// You should have received a copy of the GNU Lesser General Public
-// License along with this software; if not, write to the Free
-// Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-// 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-// 
-// Encog and Heaton Research are Trademarks of Heaton Research, Inc.
-// For information on Heaton Research trademarks, visit:
-// 
-// http://www.heatonresearch.com/copyright.html
-
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.IO;
+using System.Linq;
 
 namespace Encog.Parse
 {
@@ -45,17 +37,17 @@ namespace Encog.Parse
         /// <summary>
         /// The underlying stream.
         /// </summary>
-        private Stream stream;
+        private readonly Stream _stream;
 
         /// <summary>
         /// Bytes that have been peeked at.
         /// </summary>
-        private byte[] peekBytes;
+        private byte[] _peekBytes;
 
         /// <summary>
         /// How many bytes have been peeked at.
         /// </summary>
-        private int peekLength;
+        private int _peekLength;
 
         /// <summary>
         /// Construct a peekable input stream based on the specified stream.
@@ -63,9 +55,9 @@ namespace Encog.Parse
         /// <param name="stream">The underlying stream.</param>
         public PeekableInputStream(Stream stream)
         {
-            this.stream = stream;
-            this.peekBytes = new byte[10];
-            this.peekLength = 0;
+            _stream = stream;
+            _peekBytes = new byte[10];
+            _peekLength = 0;
         }
 
         /// <summary>
@@ -105,14 +97,8 @@ namespace Encog.Parse
         /// </summary>
         public override long Position
         {
-            get
-            {
-                throw new NotSupportedException();
-            }
-            set
-            {
-                throw new NotSupportedException();
-            }
+            get { throw new NotSupportedException(); }
+            set { throw new NotSupportedException(); }
         }
 
         /// <summary>
@@ -126,8 +112,8 @@ namespace Encog.Parse
         /// <summary>
         /// Not supported.
         /// </summary>
-        /// <param name="value">The length.</param>
-        public override void SetLength(long value)
+        /// <param name="v">The length.</param>
+        public override void SetLength(long v)
         {
             throw new NotSupportedException();
         }
@@ -152,9 +138,9 @@ namespace Encog.Parse
         /// <returns>The number of bytes read.</returns>
         public override int Read(byte[] buffer, int offset, int count)
         {
-            if (this.peekLength == 0)
+            if (_peekLength == 0)
             {
-                return stream.Read(buffer, offset, count);
+                return _stream.Read(buffer, offset, count);
             }
 
             for (int i = 0; i < count; i++)
@@ -181,12 +167,11 @@ namespace Encog.Parse
         /// <returns>The byte read, or -1 for end of stream.</returns>
         public int Read()
         {
-            byte[] b = new byte[1];
+            var b = new byte[1];
             int count = Read(b, 0, 1);
             if (count < 1)
                 return -1;
-            else
-                return b[0];
+            return b[0];
         }
 
         /// <summary>
@@ -197,41 +182,41 @@ namespace Encog.Parse
         public int Peek(int depth)
         {
             // does the size of the peek buffer need to be extended?
-            if (this.peekBytes.Length <= depth)
+            if (_peekBytes.Length <= depth)
             {
-                byte[] temp = new byte[depth + 10];
-                for (int i = 0; i < this.peekBytes.Length; i++)
+                var temp = new byte[depth + 10];
+                for (int i = 0; i < _peekBytes.Length; i++)
                 {
-                    temp[i] = this.peekBytes[i];
+                    temp[i] = _peekBytes[i];
                 }
-                this.peekBytes = temp;
+                _peekBytes = temp;
             }
 
             // does more data need to be read?
-            if (depth >= this.peekLength)
+            if (depth >= _peekLength)
             {
-                int offset = this.peekLength;
-                int length = (depth - this.peekLength) + 1;
-                int lengthRead = this.stream.Read(this.peekBytes, offset, length);
+                int offset = _peekLength;
+                int length = (depth - _peekLength) + 1;
+                int lengthRead = _stream.Read(_peekBytes, offset, length);
 
                 if (lengthRead < 1)
                 {
                     return -1;
                 }
 
-                this.peekLength = depth + 1;
+                _peekLength = depth + 1;
             }
 
-            return this.peekBytes[depth];
+            return _peekBytes[depth];
         }
 
         private byte Pop()
         {
-            byte result = this.peekBytes[0];
-            this.peekLength--;
-            for (int i = 0; i < this.peekLength; i++)
+            byte result = _peekBytes[0];
+            _peekLength--;
+            for (int i = 0; i < _peekLength; i++)
             {
-                this.peekBytes[i] = this.peekBytes[i + 1];
+                _peekBytes[i] = _peekBytes[i + 1];
             }
 
             return result;
@@ -254,14 +239,7 @@ namespace Encog.Parse
         /// <returns>True if the string was found.</returns>
         public bool Peek(String str)
         {
-            for (int i = 0; i < str.Length; i++)
-            {
-                if (Peek(i) != str[i])
-                {
-                    return false;
-                }
-            }
-            return true;
+            return !str.Where((t, i) => Peek(i) != t).Any();
         }
 
 
@@ -275,13 +253,10 @@ namespace Encog.Parse
             long count2 = count;
             while (count2 > 0)
             {
-                this.Read();
+                Read();
                 count2--;
             }
             return count;
         }
-
-
     }
 }
-

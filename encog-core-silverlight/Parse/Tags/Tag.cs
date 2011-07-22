@@ -1,38 +1,31 @@
-// Encog(tm) Artificial Intelligence Framework v2.5
-// .Net Version
+//
+// Encog(tm) Core v3.0 - .Net Version
 // http://www.heatonresearch.com/encog/
-// http://code.google.com/p/encog-java/
-// 
-// Copyright 2008-2010 by Heaton Research Inc.
-// 
-// Released under the LGPL.
 //
-// This is free software; you can redistribute it and/or modify it
-// under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 2.1 of
-// the License, or (at your option) any later version.
+// Copyright 2008-2011 Heaton Research, Inc.
 //
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-// Lesser General Public License for more details.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// You should have received a copy of the GNU Lesser General Public
-// License along with this software; if not, write to the Free
-// Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-// 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-// 
-// Encog and Heaton Research are Trademarks of Heaton Research, Inc.
-// For information on Heaton Research trademarks, visit:
-// 
-// http://www.heatonresearch.com/copyright.html
-
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
+
 #if logging
-using log4net;
+
 #endif
 
 namespace Encog.Parse.Tags
@@ -44,7 +37,6 @@ namespace Encog.Parse.Tags
     /// </summary>
     public class Tag
     {
-
         /// <summary>
         /// Tag types.
         /// </summary>
@@ -53,52 +45,46 @@ namespace Encog.Parse.Tags
             /// <summary>
             /// A beginning tag.
             /// </summary>
-            BEGIN,
+            Begin,
             /// <summary>
             /// An ending tag.
             /// </summary>
-            END,
+            End,
             /// <summary>
             /// A comment.
             /// </summary>
-            COMMENT,
+            Comment,
             /// <summary>
             /// A CDATA section.
             /// </summary>
             CDATA
-        };
+        } ;
 
-#if logging
-        /// <summary>
-        /// The logging object.
-        /// </summary>
-        private readonly ILog logger = LogManager.GetLogger(typeof(Tag));
-#endif
 
         /// <summary>
         /// The tag's attributes.
         /// </summary>
-        private IDictionary<String, String> attributes =
-                new Dictionary<String, String>();
+        private readonly IDictionary<String, String> _attributes =
+            new Dictionary<String, String>();
 
         /// <summary>
         /// The tag name.
         /// </summary>
-        private String name = "";
+        private String _name = "";
 
         /// <summary>
         /// The tag type.
         /// </summary>
-        private Type type;
+        private Type _type;
 
         /// <summary>
         /// Clear the name, type and attributes.
         /// </summary>
         public void Clear()
         {
-            this.attributes.Clear();
-            this.name = "";
-            this.type = Type.BEGIN;
+            _attributes.Clear();
+            _name = "";
+            _type = Type.Begin;
         }
 
         /// <summary>
@@ -107,12 +93,10 @@ namespace Encog.Parse.Tags
         /// <returns>A cloned copy of the object.</returns>
         public virtual object Clone()
         {
-            Tag result = new Tag();
-            result.Name = this.Name;
-            result.TagType = this.TagType;
-            foreach (String key in this.attributes.Keys)
+            var result = new Tag {Name = Name, TagType = TagType};
+            foreach (String key in _attributes.Keys)
             {
-                String value = this.attributes[key];
+                String value = _attributes[key];
                 result.Attributes[key] = value;
             }
             return result;
@@ -133,14 +117,13 @@ namespace Encog.Parse.Tags
             catch (Exception e)
             {
 #if logging
-                if (this.logger.IsErrorEnabled)
+                if (logger.IsErrorEnabled)
                 {
-                    this.logger.Error("Exception", e);
+                    logger.Error("Exception", e);
                 }
 #endif
                 throw new ParseError(e);
             }
-
         }
 
 
@@ -149,10 +132,7 @@ namespace Encog.Parse.Tags
         /// </summary>
         public IDictionary<String, String> Attributes
         {
-            get
-            {
-                return this.attributes;
-            }
+            get { return _attributes; }
         }
 
         /// <summary>
@@ -162,10 +142,10 @@ namespace Encog.Parse.Tags
         /// <returns>The value of the specified attribute.</returns>
         public String GetAttributeValue(String name)
         {
-            if (!this.attributes.ContainsKey(name))
+            if (!_attributes.ContainsKey(name))
                 return null;
 
-            return this.attributes[name];
+            return _attributes[name];
         }
 
 
@@ -174,14 +154,8 @@ namespace Encog.Parse.Tags
         /// </summary>
         public String Name
         {
-            get
-            {
-                return this.name;
-            }
-            set
-            {
-                this.name = value;
-            }
+            get { return _name; }
+            set { _name = value; }
         }
 
         /// <summary>
@@ -189,24 +163,18 @@ namespace Encog.Parse.Tags
         /// </summary>
         public Type TagType
         {
-            get
-            {
-                return this.type;
-            }
-            set
-            {
-                this.type = value;
-            }
+            get { return _type; }
+            set { _type = value; }
         }
 
         /// <summary>
         /// Set a HTML attribute.
         /// </summary>
         /// <param name="name">The name of the attribute.</param>
-        /// <param name="value">The value of the attribute.</param>
-        public void SetAttribute(String name, String value)
+        /// <param name="valueRen">The value of the attribute.</param>
+        public void SetAttribute(String name, String valueRen)
         {
-            this.attributes[name] = value;
+            _attributes[name] = valueRen;
         }
 
         /// <summary>
@@ -216,19 +184,19 @@ namespace Encog.Parse.Tags
         /// <returns>The Attribute object that was found.</returns>
         public override String ToString()
         {
-            StringBuilder buffer = new StringBuilder("<");
+            var buffer = new StringBuilder("<");
 
-            if (this.type == Type.END)
+            if (_type == Type.End)
             {
                 buffer.Append("/");
             }
 
-            buffer.Append(this.name);
+            buffer.Append(_name);
 
-            ICollection<String> set = this.attributes.Keys;
+            ICollection<String> set = _attributes.Keys;
             foreach (String key in set)
             {
-                String value = this.attributes[key];
+                String value = _attributes[key];
                 buffer.Append(' ');
 
                 if (value == null)
@@ -244,12 +212,10 @@ namespace Encog.Parse.Tags
                     buffer.Append(value);
                     buffer.Append("\"");
                 }
-
             }
 
             buffer.Append(">");
             return buffer.ToString();
         }
-
     }
 }

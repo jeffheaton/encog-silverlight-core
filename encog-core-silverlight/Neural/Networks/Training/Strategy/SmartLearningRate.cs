@@ -1,42 +1,28 @@
-// Encog(tm) Artificial Intelligence Framework v2.5
-// .Net Version
+//
+// Encog(tm) Core v3.0 - .Net Version
 // http://www.heatonresearch.com/encog/
-// http://code.google.com/p/encog-java/
-// 
-// Copyright 2008-2010 by Heaton Research Inc.
-// 
-// Released under the LGPL.
 //
-// This is free software; you can redistribute it and/or modify it
-// under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 2.1 of
-// the License, or (at your option) any later version.
+// Copyright 2008-2011 Heaton Research, Inc.
 //
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-// Lesser General Public License for more details.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// You should have received a copy of the GNU Lesser General Public
-// License along with this software; if not, write to the Free
-// Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-// 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-// 
-// Encog and Heaton Research are Trademarks of Heaton Research, Inc.
-// For information on Heaton Research trademarks, visit:
-// 
-// http://www.heatonresearch.com/copyright.html
-
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Encog.Neural.NeuralData;
-using Encog.Neural.Data;
-
-#if logging
-using log4net;
-#endif
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
+using Encog.ML.Train;
+using Encog.ML.Train.Strategy;
+using Encog.Util.Logging;
 
 namespace Encog.Neural.Networks.Training.Strategy
 {
@@ -44,129 +30,102 @@ namespace Encog.Neural.Networks.Training.Strategy
     /// Attempt to automatically set the learning rate in a learning method that
     /// supports a learning rate.
     /// </summary>
+    ///
     public class SmartLearningRate : IStrategy
     {
-
         /// <summary>
         /// Learning decay rate.
         /// </summary>
-        public const double LEARNING_DECAY = 0.99;
-
-        /// <summary>
-        /// The training algorithm that is using this strategy.
-        /// </summary>
-        private ITrain train;
-
-        /// <summary>
-        /// The class that is to have the learning rate set for.
-        /// </summary>
-        private ILearningRate setter;
+        ///
+        public const double LearningDecay = 0.99d;
 
         /// <summary>
         /// The current learning rate.
         /// </summary>
-        private double currentLearningRate;
-
-        /// <summary>
-        /// The training set size, this is used to pick an initial learning rate.
-        /// </summary>
-        private long trainingSize;
+        ///
+        private double _currentLearningRate;
 
         /// <summary>
         /// The error rate from the previous iteration.
         /// </summary>
-        private double lastError;
+        ///
+        private double _lastError;
 
         /// <summary>
         /// Has one iteration passed, and we are now ready to start evaluation.
         /// </summary>
-        private bool ready;
-
-#if logging
-        /// <summary>
-        /// The logging object.
-        /// </summary>
-        private readonly ILog logger = LogManager.GetLogger(typeof(SmartLearningRate));
-#endif
+        ///
+        private bool _ready;
 
         /// <summary>
-        /// Determine the training size.
+        /// The class that is to have the learning rate set for.
         /// </summary>
-        /// <returns>The training size.</returns>
-        private long DetermineTrainingSize()
-        {
-            long result = 0;
+        ///
+        private ILearningRate _setter;
 
-            if (this.train is IIndexable)
-            {
-                result = ((IIndexable)this.train).Count;
-            }
-            else
-            {
-                foreach (
-                 INeuralDataPair pair in this.train.Training)
-                {
-                    result++;
-                }
-            }
-            return result;
-        }
+        /// <summary>
+        /// The training algorithm that is using this strategy.
+        /// </summary>
+        ///
+        private IMLTrain _train;
+
+        /// <summary>
+        /// The training set size, this is used to pick an initial learning rate.
+        /// </summary>
+        ///
+        private long _trainingSize;
+
+        #region IStrategy Members
 
         /// <summary>
         /// Initialize this strategy.
         /// </summary>
+        ///
         /// <param name="train">The training algorithm.</param>
-        public void Init(ITrain train)
+        public void Init(IMLTrain train)
         {
-            this.train = train;
-            this.ready = false;
-            this.setter = (ILearningRate)train;
-            this.trainingSize = DetermineTrainingSize();
-            this.currentLearningRate = 1.0 / this.trainingSize;
-#if logging
-            if (this.logger.IsInfoEnabled)
-            {
-                this.logger.Info("Starting learning rate: " +
-                        this.currentLearningRate);
-            }
-#endif
-            this.setter.LearningRate = this.currentLearningRate;
+            _train = train;
+            _ready = false;
+            _setter = (ILearningRate) train;
+            _trainingSize = train.Training.Count;
+            _currentLearningRate = 1.0d/_trainingSize;
+            EncogLogging.Log(EncogLogging.LevelDebug, "Starting learning rate: "
+                                                       + _currentLearningRate);
+            _setter.LearningRate = _currentLearningRate;
         }
 
         /// <summary>
         /// Called just after a training iteration.
         /// </summary>
+        ///
         public void PostIteration()
         {
-            if (this.ready)
+            if (_ready)
             {
-                if (this.train.Error > this.lastError)
+                if (_train.Error > _lastError)
                 {
-                    this.currentLearningRate *= SmartLearningRate.LEARNING_DECAY;
-                    this.setter.LearningRate = this.currentLearningRate;
-#if logging
-                    if (this.logger.IsInfoEnabled)
-                    {
-                        this.logger.Info("Adjusting learning rate to " +
-                                this.currentLearningRate);
-                    }
-#endif
+                    _currentLearningRate *= LearningDecay;
+                    _setter.LearningRate = _currentLearningRate;
+                    EncogLogging.Log(EncogLogging.LevelDebug,
+                                     "Adjusting learning rate to {}"
+                                     + _currentLearningRate);
                 }
             }
             else
             {
-                this.ready = true;
+                _ready = true;
             }
-
         }
 
         /// <summary>
         /// Called just before a training iteration.
         /// </summary>
+        ///
         public void PreIteration()
         {
-            this.lastError = this.train.Error;
+            _lastError = _train.Error;
         }
 
+        #endregion
     }
 }

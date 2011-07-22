@@ -1,105 +1,96 @@
-// Encog(tm) Artificial Intelligence Framework v2.5
-// .Net Version
+//
+// Encog(tm) Core v3.0 - .Net Version
 // http://www.heatonresearch.com/encog/
-// http://code.google.com/p/encog-java/
-// 
-// Copyright 2008-2010 by Heaton Research Inc.
-// 
-// Released under the LGPL.
 //
-// This is free software; you can redistribute it and/or modify it
-// under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 2.1 of
-// the License, or (at your option) any later version.
+// Copyright 2008-2011 Heaton Research, Inc.
 //
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-// Lesser General Public License for more details.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// You should have received a copy of the GNU Lesser General Public
-// License along with this software; if not, write to the Free
-// Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-// 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-// 
-// Encog and Heaton Research are Trademarks of Heaton Research, Inc.
-// For information on Heaton Research trademarks, visit:
-// 
-// http://www.heatonresearch.com/copyright.html
-
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Encog.MathUtil.Randomize;
-using Encog.Solve.Genetic.Genes;
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
+using Encog.ML.Genetic.Genes;
+using Encog.ML.Genetic.Genome;
 using Encog.Neural.Networks.Structure;
-using Encog.Solve.Genetic.Genome;
 
 namespace Encog.Neural.Networks.Training.Genetic
 {
     /// <summary>
-    /// Implements a genome that allows a feedforward neural
-    /// network to be trained using a genetic algorithm. The chromosome for a feed
-    /// forward neural network is the weight and threshold matrix.
+    /// Implements a genome that allows a feedforward neural network to be trained
+    /// using a genetic algorithm. The chromosome for a feed forward neural network
+    /// is the weight and bias matrix.
     /// </summary>
+    ///
     public class NeuralGenome : BasicGenome
     {
         /// <summary>
-        /// The network chromosome.
+        /// The chromosome.
         /// </summary>
-        private Chromosome networkChromosome;
+        ///
+        private readonly Chromosome _networkChromosome;
 
         /// <summary>
-        /// Construct a neural network genome.
+        /// Construct a neural genome.
         /// </summary>
-        /// <param name="nga">The neural genetic algorithm.</param>
-        /// <param name="network">The network.</param>
-        public NeuralGenome(NeuralGeneticAlgorithm nga, BasicNetwork network)
-            : base(nga.Helper)
+        ///
+        /// <param name="network">The network to use.</param>
+        public NeuralGenome(BasicNetwork network)
         {
-            this.Organism = network;
-            this.networkChromosome = new Chromosome();
+            Organism = network;
+
+            _networkChromosome = new Chromosome();
 
             // create an array of "double genes"
             int size = network.Structure.CalculateSize();
             for (int i = 0; i < size; i++)
             {
                 IGene gene = new DoubleGene();
-                this.networkChromosome.Genes.Add(gene);
+                _networkChromosome.Genes.Add(gene);
             }
 
-            this.Chromosomes.Add(this.networkChromosome);
+            Chromosomes.Add(_networkChromosome);
 
             Encode();
         }
 
         /// <summary>
-        /// Decode the genome to a network.
+        /// Decode the genomes into a neural network.
         /// </summary>
-        public override void Decode()
+        ///
+        public override sealed void Decode()
         {
-            double[] net = new double[networkChromosome.Genes.Count];
+            var net = new double[_networkChromosome.Genes.Count];
             for (int i = 0; i < net.Length; i++)
             {
-                DoubleGene gene = (DoubleGene)networkChromosome.Genes[i];
+                var gene = (DoubleGene) _networkChromosome.Genes[i];
                 net[i] = gene.Value;
-
             }
-            NetworkCODEC.ArrayToNetwork(net, (BasicNetwork)Organism);
-
+            NetworkCODEC.ArrayToNetwork(net, (BasicNetwork) Organism);
         }
 
         /// <summary>
-        /// Encode the network to a genome.
+        /// Encode the neural network into genes.
         /// </summary>
-        public override void Encode()
+        ///
+        public override sealed void Encode()
         {
-            double[] net = NetworkCODEC.NetworkToArray((BasicNetwork)Organism);
+            double[] net = NetworkCODEC
+                .NetworkToArray((BasicNetwork) Organism);
 
             for (int i = 0; i < net.Length; i++)
             {
-                ((DoubleGene)networkChromosome.Genes[i]).Value = net[i];
+                ((DoubleGene) _networkChromosome.GetGene(i)).Value = net[i];
             }
         }
     }

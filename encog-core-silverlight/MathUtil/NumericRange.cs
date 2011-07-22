@@ -1,38 +1,30 @@
-// Encog(tm) Artificial Intelligence Framework v2.5
-// .Net Version
+//
+// Encog(tm) Core v3.0 - .Net Version
 // http://www.heatonresearch.com/encog/
-// http://code.google.com/p/encog-java/
-// 
-// Copyright 2008-2010 by Heaton Research Inc.
-// 
-// Released under the LGPL.
 //
-// This is free software; you can redistribute it and/or modify it
-// under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 2.1 of
-// the License, or (at your option) any later version.
+// Copyright 2008-2011 Heaton Research, Inc.
 //
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-// Lesser General Public License for more details.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// You should have received a copy of the GNU Lesser General Public
-// License along with this software; if not, write to the Free
-// Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-// 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-// 
-// Encog and Heaton Research are Trademarks of Heaton Research, Inc.
-// For information on Heaton Research trademarks, visit:
-// 
-// http://www.heatonresearch.com/copyright.html
-
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Encog.Util;
-using Encog.Engine.Util;
 
 namespace Encog.MathUtil
 {
@@ -45,32 +37,32 @@ namespace Encog.MathUtil
         /// <summary>
         /// The high number in the range.
         /// </summary>
-        private double high;
+        private readonly double _high;
 
         /// <summary>
         /// The low number in the range.
         /// </summary>
-        private double low;
+        private readonly double _low;
 
         /// <summary>
         /// The mean value.
         /// </summary>
-        private double mean;
+        private readonly double _mean;
 
         /// <summary>
         /// The root mean square of the range.
         /// </summary>
-        private double rms;
-
-        /// <summary>
-        /// The standard deviation of the range.
-        /// </summary>
-        private double standardDeviation;
+        private readonly double _rms;
 
         /// <summary>
         /// The number of values in this range.
         /// </summary>
-        private int samples;
+        private readonly int _samples;
+
+        /// <summary>
+        /// The standard deviation of the range.
+        /// </summary>
+        private readonly double _standardDeviation;
 
         /// <summary>
         /// Create a numeric range from a list of values. 
@@ -78,7 +70,6 @@ namespace Encog.MathUtil
         /// <param name="values">The values to calculate for.</param>
         public NumericRange(IList<Double> values)
         {
-
             double assignedHigh = 0;
             double assignedLow = 0;
             double total = 0;
@@ -91,23 +82,19 @@ namespace Encog.MathUtil
                 assignedHigh = Math.Max(assignedHigh, d);
                 assignedLow = Math.Min(assignedLow, d);
                 total += d;
-                rmsTotal += d * d;
+                rmsTotal += d*d;
             }
 
-            this.samples = values.Count;
-            this.high = assignedHigh;
-            this.low = assignedLow;
-            this.mean = total / this.samples;
-            this.rms = Math.Sqrt(rmsTotal / this.samples);
+            _samples = values.Count;
+            _high = assignedHigh;
+            _low = assignedLow;
+            _mean = total/_samples;
+            _rms = Math.Sqrt(rmsTotal/_samples);
 
             // now get the standard deviation
-            double devTotal = 0;
+            double devTotal = values.Sum(d => Math.Pow(d - _mean, 2));
 
-            foreach (double d in values)
-            {
-                devTotal += Math.Pow(d - this.mean, 2);
-            }
-            this.standardDeviation = Math.Sqrt(devTotal / this.samples);
+            _standardDeviation = Math.Sqrt(devTotal/_samples);
         }
 
         /// <summary>
@@ -115,10 +102,7 @@ namespace Encog.MathUtil
         /// </summary>
         public double High
         {
-            get
-            {
-                return high;
-            }
+            get { return _high; }
         }
 
         /// <summary>
@@ -126,21 +110,15 @@ namespace Encog.MathUtil
         /// </summary>
         public double Low
         {
-            get
-            {
-                return low;
-            }
+            get { return _low; }
         }
 
         /// <summary>
         /// The mean in the range.
         /// </summary>
-        public double getMean
+        public double Mean
         {
-            get
-            {
-                return mean;
-            }
+            get { return _mean; }
         }
 
         /// <summary>
@@ -148,10 +126,7 @@ namespace Encog.MathUtil
         /// </summary>
         public double RMS
         {
-            get
-            {
-                return rms;
-            }
+            get { return _rms; }
         }
 
         /// <summary>
@@ -159,10 +134,7 @@ namespace Encog.MathUtil
         /// </summary>
         public double StandardDeviation
         {
-            get
-            {
-                return standardDeviation;
-            }
+            get { return _standardDeviation; }
         }
 
         /// <summary>
@@ -170,10 +142,7 @@ namespace Encog.MathUtil
         /// </summary>
         public int Samples
         {
-            get
-            {
-                return samples;
-            }
+            get { return _samples; }
         }
 
         /// <summary>
@@ -182,19 +151,19 @@ namespace Encog.MathUtil
         /// <returns>The range as a string.</returns>
         public override String ToString()
         {
-            StringBuilder result = new StringBuilder();
+            var result = new StringBuilder();
             result.Append("Range: ");
-            result.Append(Format.FormatDouble(this.low, 5));
+            result.Append(Format.FormatDouble(_low, 5));
             result.Append(" to ");
-            result.Append(Format.FormatDouble(this.high, 5));
+            result.Append(Format.FormatDouble(_high, 5));
             result.Append(",samples: ");
-            result.Append(Format.FormatInteger(this.samples));
+            result.Append(Format.FormatInteger(_samples));
             result.Append(",mean: ");
-            result.Append(Format.FormatDouble(this.mean, 5));
+            result.Append(Format.FormatDouble(_mean, 5));
             result.Append(",rms: ");
-            result.Append(Format.FormatDouble(this.rms, 5));
+            result.Append(Format.FormatDouble(_rms, 5));
             result.Append(",s.deviation: ");
-            result.Append(Format.FormatDouble(this.standardDeviation, 5));
+            result.Append(Format.FormatDouble(_standardDeviation, 5));
 
             return result.ToString();
         }

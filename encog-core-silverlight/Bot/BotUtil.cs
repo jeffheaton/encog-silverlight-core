@@ -1,42 +1,34 @@
-// Encog(tm) Artificial Intelligence Framework v2.5
-// .Net Version
+//
+// Encog(tm) Core v3.0 - .Net Version
 // http://www.heatonresearch.com/encog/
-// http://code.google.com/p/encog-java/
-// 
-// Copyright 2008-2010 by Heaton Research Inc.
-// 
-// Released under the LGPL.
 //
-// This is free software; you can redistribute it and/or modify it
-// under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 2.1 of
-// the License, or (at your option) any later version.
+// Copyright 2008-2011 Heaton Research, Inc.
 //
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-// Lesser General Public License for more details.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// You should have received a copy of the GNU Lesser General Public
-// License along with this software; if not, write to the Free
-// Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-// 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-// 
-// Encog and Heaton Research are Trademarks of Heaton Research, Inc.
-// For information on Heaton Research trademarks, visit:
-// 
-// http://www.heatonresearch.com/copyright.html
-
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//   
+// For more information on Heaton Research copyrights, licenses 
+// and trademarks visit:
+// http://www.heatonresearch.com/copyright
+//
 #if !SILVERLIGHT
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.IO;
 using System.Net;
+using System.Text;
 using Encog.Util.HTTP;
-using log4net;
-using Encog.Util;
+using Encog.Util.File;
+
 
 namespace Encog.Bot
 {
@@ -45,18 +37,10 @@ namespace Encog.Bot
     /// </summary>
     public class BotUtil
     {
-
         /// <summary>
         /// How much data to read at once.
         /// </summary>
-        public static int BUFFER_SIZE = 8192;
-
-#if logging
-        /// <summary>
-        /// The logging object.
-        /// </summary>
-        private static readonly ILog LOGGER = LogManager.GetLogger(typeof(BotUtil));
-#endif
+        public static int BufferSize = 8192;
 
         /// <summary>
         /// This method is very useful for grabbing information from a HTML page.
@@ -68,10 +52,8 @@ namespace Encog.Bot
         /// <param name="occurence">What occurence.</param>
         /// <returns>The contents of the URL that was downloaded.</returns>
         public static String ExtractFromIndex(String str, String token1,
-                 String token2, int index, int occurence)
+                                              String token2, int index, int occurence)
         {
-            int location1, location2;
-
             // convert everything to lower case
             String searchStr = str.ToLower();
             String token1Lower = token1.ToLower();
@@ -80,7 +62,7 @@ namespace Encog.Bot
             int count = occurence;
 
             // now search
-            location1 = location2 = index - 1;
+            int location1 = index - 1;
             do
             {
                 location1 = searchStr.IndexOf(token1Lower, location1 + 1);
@@ -94,10 +76,9 @@ namespace Encog.Bot
             } while (count > 0);
 
 
-
             // return the result from the original string that has mixed
             // case
-            location2 = searchStr.IndexOf(token2Lower, location1 + 1);
+            int location2 = searchStr.IndexOf(token2Lower, location1 + 1);
             if (location2 == -1)
             {
                 return null;
@@ -115,10 +96,8 @@ namespace Encog.Bot
         /// <param name="index">Which occurrence of token1 to use, 1 for the first.</param>
         /// <returns>The contents of the URL that was downloaded.</returns>
         public static String Extract(String str, String token1,
-                 String token2, int index)
+                                     String token2, int index)
         {
-            int location1, location2;
-
             // convert everything to lower case
             String searchStr = str.ToLower();
             String token1Lower = token1.ToLower();
@@ -127,7 +106,7 @@ namespace Encog.Bot
             int count = index;
 
             // now search
-            location1 = location2 = -1;
+            int location1 = -1;
             do
             {
                 location1 = searchStr.IndexOf(token1Lower, location1 + 1);
@@ -142,7 +121,7 @@ namespace Encog.Bot
 
             // return the result from the original string that has mixed
             // case
-            location2 = searchStr.IndexOf(token2Lower, location1 + 1);
+            int location2 = searchStr.IndexOf(token2Lower, location1 + 1);
             if (location2 == -1)
             {
                 return null;
@@ -164,7 +143,7 @@ namespace Encog.Bot
             req.ContentType = "application/x-www-form-urlencoded";
             req.Method = "POST";
 
-            StringBuilder postString = new StringBuilder();
+            var postString = new StringBuilder();
             foreach (String key in param.Keys)
             {
                 String value = param[key];
@@ -174,21 +153,21 @@ namespace Encog.Bot
                         postString.Append('&');
                     postString.Append(key);
                     postString.Append('=');
-                    postString.Append( FormUtility.Encode(value));
+                    postString.Append(FormUtility.Encode(value));
                 }
             }
 
-            byte[] bytes = System.Text.Encoding.ASCII.GetBytes(postString.ToString());
+            byte[] bytes = Encoding.ASCII.GetBytes(postString.ToString());
             req.ContentLength = bytes.Length;
 
-            System.IO.Stream os = req.GetRequestStream();
+            Stream os = req.GetRequestStream();
             os.Write(bytes, 0, bytes.Length);
             os.Close();
 
-            System.Net.WebResponse resp = req.GetResponse();
+            WebResponse resp = req.GetResponse();
             if (resp == null) return null;
 
-            System.IO.StreamReader sr = new System.IO.StreamReader(resp.GetResponseStream());
+            var sr = new StreamReader(resp.GetResponseStream());
             return sr.ReadToEnd().Trim();
         }
 
@@ -205,14 +184,15 @@ namespace Encog.Bot
             //webRequest.ContentType = "application/x-www-form-urlencoded";
             webRequest.Method = "POST";
             webRequest.ContentLength = length;
-            
+
 
             Stream os = null;
             try
-            { // send the Post
-                webRequest.ContentLength = bytes.Length;   //Count bytes to send
+            {
+                // send the Post
+                webRequest.ContentLength = bytes.Length; //Count bytes to send
                 os = webRequest.GetRequestStream();
-                os.Write(bytes, 0, length);         //Send it
+                os.Write(bytes, 0, length); //Send it
             }
             catch (WebException ex)
             {
@@ -227,13 +207,14 @@ namespace Encog.Bot
             }
 
             try
-            { // get the response
+            {
+                // get the response
                 WebResponse webResponse = webRequest.GetResponse();
                 if (webResponse == null)
                 {
                     return null;
                 }
-                StreamReader sr = new StreamReader(webResponse.GetResponseStream());
+                var sr = new StreamReader(webResponse.GetResponseStream());
                 return sr.ReadToEnd();
             }
             catch (WebException ex)
@@ -251,13 +232,13 @@ namespace Encog.Bot
         {
             try
             {
-                StringBuilder result = new StringBuilder();
-                byte[] buffer = new byte[BotUtil.BUFFER_SIZE];
+                var result = new StringBuilder();
+                var buffer = new byte[BufferSize];
 
                 int length;
 
-                WebRequest http = HttpWebRequest.Create(url);
-                HttpWebResponse response = (HttpWebResponse)http.GetResponse();
+                WebRequest http = WebRequest.Create(url);
+                var response = (HttpWebResponse) http.GetResponse();
                 Stream istream = response.GetResponseStream();
 
                 do
@@ -265,7 +246,7 @@ namespace Encog.Bot
                     length = istream.Read(buffer, 0, buffer.Length);
                     if (length > 0)
                     {
-                        String str = System.Text.Encoding.UTF8.GetString(buffer, 0, length);
+                        String str = Encoding.UTF8.GetString(buffer, 0, length);
                         result.Append(str);
                     }
                 } while (length > 0);
@@ -275,9 +256,9 @@ namespace Encog.Bot
             catch (IOException e)
             {
 #if logging
-                if (BotUtil.LOGGER.IsErrorEnabled)
+                if (LOGGER.IsErrorEnabled)
                 {
-                    BotUtil.LOGGER.Error("Exception", e);
+                    LOGGER.Error("Exception", e);
                 }
 #endif
                 throw new BotError(e);
@@ -289,7 +270,6 @@ namespace Encog.Bot
         /// </summary>
         private BotUtil()
         {
-
         }
 
         /// <summary>
@@ -305,19 +285,18 @@ namespace Encog.Bot
             //req.ContentType = "application/x-www-form-urlencoded";
             req.Method = "POST";
 
-            System.IO.Stream os = req.GetRequestStream();
+            Stream os = req.GetRequestStream();
 
             FileUtil.CopyStream(stream, os);
             os.Close();
 
-            System.Net.WebResponse resp = req.GetResponse();
+            WebResponse resp = req.GetResponse();
             if (resp == null) return null;
 
-            System.IO.StreamReader sr = new System.IO.StreamReader(resp.GetResponseStream());
+            var sr = new StreamReader(resp.GetResponseStream());
             return sr.ReadToEnd().Trim();
-
         }
     }
-
 }
+
 #endif
